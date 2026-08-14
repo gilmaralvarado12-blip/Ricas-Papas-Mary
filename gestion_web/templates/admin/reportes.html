@@ -1,0 +1,194 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Reportes del sistema{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .report-toolbar { background:#fff; padding:16px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px; }
+    .report-toolbar label { margin-right:6px; font-weight:600; }
+    .report-toolbar input { margin-right:12px; }
+    .report-toolbar button, .report-toolbar a { padding:8px 12px; border:0; border-radius:4px; text-decoration:none; cursor:pointer; }
+    .report-toolbar button { background:#417690; color:#fff; }
+    .report-toolbar a { background:#70bf2b; color:#fff; }
+    .report-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:16px; margin-bottom:20px; }
+    .report-card { background:#fff; border:1px solid #ddd; border-radius:6px; padding:16px; }
+    .report-card h3 { margin:0 0 8px; font-size:13px; color:#666; text-transform:uppercase; }
+    .report-card strong { font-size:25px; color:#222; }
+    .report-section { background:#fff; border:1px solid #ddd; border-radius:6px; padding:16px; margin-bottom:20px; overflow-x:auto; }
+    .report-section h2 { margin-top:0; font-size:18px; }
+    .report-section table { width:100%; border-collapse:collapse; }
+    .report-section th, .report-section td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
+    .report-empty { color:#777; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Reportes del sistema</h1>
+<p>Información calculada con los pedidos, reservas, entregas y productos registrados.</p>
+
+<form method="get" class="report-toolbar">
+    <label for="desde">Desde:</label>
+    <input type="date" id="desde" name="desde" value="{{ desde }}">
+    <label for="hasta">Hasta:</label>
+    <input type="date" id="hasta" name="hasta" value="{{ hasta }}">
+    <button type="submit">Actualizar reporte</button>
+    <a href="?desde={{ desde }}&hasta={{ hasta }}&formato=csv">Exportar CSV</a>
+</form>
+
+<div class="report-grid">
+    <div class="report-card"><h3>Pedidos registrados</h3><strong>{{ pedidos_total }}</strong></div>
+    <div class="report-card"><h3>Ventas no canceladas</h3><strong>${{ ventas_registradas|floatformat:2 }}</strong></div>
+    <div class="report-card"><h3>Ventas pagadas</h3><strong>${{ ventas_pagadas|floatformat:2 }}</strong></div>
+    <div class="report-card"><h3>Reservas registradas</h3><strong>{{ reservas_total }}</strong></div>
+</div>
+
+<div class="report-section">
+    <h2>Pedidos por estado</h2>
+    <table>
+        <thead><tr><th>Estado</th><th>Total</th></tr></thead>
+        <tbody>
+            {% for row in estados_pedido %}
+            <tr><td>{{ row.estado }}</td><td>{{ row.total }}</td></tr>
+            {% empty %}<tr><td colspan="2" class="report-empty">No hay pedidos en el periodo seleccionado.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="report-section">
+    <h2>Productos más solicitados</h2>
+    <table>
+        <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
+        <tbody>
+            {% for row in productos_mas_pedidos %}
+            <tr><td>{{ row.producto__nombre }}</td><td>{{ row.cantidad }}</td></tr>
+            {% empty %}<tr><td colspan="2" class="report-empty">No hay detalles de pedidos en el periodo seleccionado.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="report-section">
+    <h2>Reservas y entregas</h2>
+    <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="flex:1 1 360px; min-width:280px;">
+            <h3>Reservas por estado</h3>
+            <table>
+                <thead><tr><th>Estado</th><th>Total</th></tr></thead>
+                <tbody>
+                    {% for row in estados_reserva %}
+                    <tr><td>{{ row.estado }}</td><td>{{ row.total }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="2" class="report-empty">No hay reservas en el periodo seleccionado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top:8px;"><a href="?desde={{ desde }}&hasta={{ hasta }}&formato=csv&detalle=reservas">Exportar detalle de reservas (CSV)</a></div>
+        </div>
+
+        <div style="flex:1 1 360px; min-width:280px;">
+            <h3>Entregas por estado</h3>
+            <table>
+                <thead><tr><th>Estado</th><th>Total</th></tr></thead>
+                <tbody>
+                    {% for row in entregas %}
+                    <tr><td>{{ row.estado_envio }}</td><td>{{ row.total }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="2" class="report-empty">No hay entregas en el periodo seleccionado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top:8px;"><a href="?desde={{ desde }}&hasta={{ hasta }}&formato=csv&detalle=entregas">Exportar detalle de entregas (CSV)</a></div>
+        </div>
+    </div>
+
+    <hr style="margin:14px 0;">
+
+    <div style="display:flex; gap:18px; flex-wrap:wrap;">
+        <div style="flex:1 1 420px; min-width:320px;">
+            <h3>Entregas por día</h3>
+            <canvas id="chartEntregasDia" height="140"></canvas>
+        </div>
+        <div style="flex:1 1 420px; min-width:320px;">
+            <h3>Reservas por día</h3>
+            <canvas id="chartReservasDia" height="140"></canvas>
+        </div>
+    </div>
+
+    <hr style="margin:14px 0;">
+
+    <div>
+        <h3>Entregas por repartidor (proxy: pagos confirmados por usuario)</h3>
+        <table>
+            <thead><tr><th>Repartidor</th><th>Total entregas (proxy)</th></tr></thead>
+            <tbody>
+                {% for row in entregas_por_repartidor %}
+                <tr><td>{{ row.confirmado_por__username }}</td><td>{{ row.total }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="report-empty">No hay registros de entregas por repartidor en el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="report-section">
+    <h2>Insumos sin stock</h2>
+    <table>
+        <thead><tr><th>Insumo</th><th>Stock</th><th>Unidad</th><th>Proveedor</th></tr></thead>
+        <tbody>
+            {% for insumo in insumos_sin_stock %}
+            <tr><td>{{ insumo.nombre }}</td><td>{{ insumo.stock }}</td><td>{{ insumo.unidad_medida }}</td><td>{{ insumo.proveedor|default:"-" }}</td></tr>
+            {% empty %}<tr><td colspan="4" class="report-empty">No hay insumos con stock cero o negativo.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        // Preparar datos desde el contexto Django
+        var entregasPorDia = {{ entregas_por_dia|default:'[]'|safe }};
+        var reservasPorDia = {{ reservas_por_dia|default:'[]'|safe }};
+
+        function mapSeries(data, dateKey) {
+            var labels = [];
+            var values = [];
+            data.forEach(function (r) {
+                labels.push(r[dateKey]);
+                values.push(r.total);
+            });
+            return { labels: labels, values: values };
+        }
+
+        try {
+            var eSeries = mapSeries(entregasPorDia, 'fecha');
+            var rSeries = mapSeries(reservasPorDia, 'fecha_dia');
+
+            var ctxE = document.getElementById('chartEntregasDia');
+            if (ctxE) new Chart(ctxE.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: eSeries.labels,
+                    datasets: [{ label: 'Entregas', data: eSeries.values, backgroundColor: '#b21e29' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            var ctxR = document.getElementById('chartReservasDia');
+            if (ctxR) new Chart(ctxR.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: rSeries.labels,
+                    datasets: [{ label: 'Reservas', data: rSeries.values, backgroundColor: '#ffb703' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) {
+            console.warn('Error al renderizar gráficos de reportes:', err);
+        }
+    })();
+</script>
+
+{% endblock %}

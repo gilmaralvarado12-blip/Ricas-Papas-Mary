@@ -1,0 +1,13 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="tarjeta" data-animate-module style="max-width: 760px; margin: 0 auto;">
+    <h2>Mi perfil</h2>
+    <p style="color:#666; margin-bottom:14px;">Actualiza tus datos personales.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar cambios</button>
+    </form>
+</div>
+{% endblock %}

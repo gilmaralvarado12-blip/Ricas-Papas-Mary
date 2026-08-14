@@ -1,0 +1,16 @@
+{% extends 'gestion_web/base.html' %}
+{% block contenido %}
+<div class="tarjeta" data-animate-module>
+    <h2>Comprobantes por revisar</h2>
+    <ul>
+        {% for c in comprobantes %}
+        <li>
+            Pedido #{{ c.pedido.id }} - {{ c.estado_display }} - {{ c.fecha_subida|date:"d/m/Y H:i" }}
+            <a class="btn btn-order-neutral" href="{% url 'pagos:validar_comprobante' c.id %}">Ver y revisar</a>
+        </li>
+        {% empty %}
+        <li>No hay comprobantes para revisar.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

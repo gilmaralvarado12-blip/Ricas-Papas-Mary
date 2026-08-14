@@ -1,0 +1,297 @@
+{% extends 'gestion_web/home.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Contenedor principal del login: usa la imagen local elegida por el usuario
+       para mantener coherencia visual con el resto de modulos del sistema. */
+    .auth-shell {
+        /* Centrado respecto al área disponible debajo del nav.
+           Restamos la altura del nav para evitar scroll innecesario. */
+        min-height: calc(100vh - 72px);
+        max-height: calc(100vh - 72px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+        /* No aplicamos una segunda imagen aquí: el fondo principal se gestiona en `home.html` */
+        background: transparent;
+        position: relative;
+        z-index: 5; /* colocamos el contenedor por encima de los orbes decorativos */
+        overflow: auto; /* si el contenido es más alto en móviles, se hará scroll interno sin afectar al body */
+    }
+
+    .auth-layout {
+        width: min(100%, 980px);
+        display: grid;
+        grid-template-columns: minmax(170px, 1fr) minmax(300px, 440px) minmax(170px, 1fr);
+        align-items: center;
+        gap: clamp(18px, 4vw, 48px);
+    }
+
+    .auth-side {
+        color: #fff8eb;
+        text-align: center;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    }
+
+    .auth-side-icon {
+        width: 68px;
+        height: 68px;
+        margin: 0 auto 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 209, 102, 0.8);
+        border-radius: 50%;
+        color: #4a2a00;
+        background: linear-gradient(135deg, #ffb703, #ffd166);
+        box-shadow: 0 12px 24px rgba(39, 4, 4, 0.3);
+        font-size: 1.6rem;
+        text-shadow: none;
+    }
+
+    .auth-side-title {
+        margin-bottom: 8px;
+        color: #ffd166;
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .auth-side-text {
+        margin: 0;
+        color: #fff8eb;
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 440px;
+        border-radius: 16px;
+        border: 2px solid #ffb703;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+        background: #fff8eb;
+        position: relative;
+        z-index: 20; /* garantizar que la tarjeta flote encima de cualquier efecto de fondo */
+        animation: authCardIn 0.55s ease-out;
+    }
+
+    .auth-close-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 1.1rem;
+        text-decoration: none;
+        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        z-index: 2;
+    }
+
+    .auth-close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.04);
+        box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.22);
+        color: #fff;
+    }
+
+    .auth-card .card-header {
+        background: linear-gradient(180deg, #b21e29 0%, #7f1016 100%);
+        color: #fff;
+        text-align: center;
+        border-bottom: 2px solid #ffb703;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .auth-btn {
+        background: linear-gradient(135deg, #ffb703 0%, #f27013 100%);
+        border: none;
+        color: #2a0707;
+        font-weight: 800;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        box-shadow: 0 12px 24px rgba(242, 112, 19, 0.28);
+    }
+
+    .auth-btn:hover {
+        color: #2a0707;
+        filter: brightness(1.03);
+        transform: translateY(-2px);
+        box-shadow: 0 16px 28px rgba(242, 112, 19, 0.34);
+    }
+
+    .auth-btn.btn-click-feedback,
+    .btn-nav-sesion.btn-click-feedback,
+    .password-toggle-btn.btn-click-feedback {
+        animation: loginBtnPulse 0.24s ease-out;
+    }
+
+    .password-toggle-btn {
+        border-color: #ced4da;
+        background: #fff;
+        color: #7f1016;
+    }
+
+    .password-toggle-btn:hover {
+        background: #f8f9fa;
+        color: #7f1016;
+    }
+
+    @keyframes authCardIn {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes loginBtnPulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(0.96);
+            filter: brightness(0.9);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .auth-card,
+        .auth-btn,
+        .auth-btn.btn-click-feedback,
+        .btn-nav-sesion.btn-click-feedback,
+        .password-toggle-btn.btn-click-feedback {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .auth-layout {
+            grid-template-columns: minmax(300px, 440px);
+            justify-content: center;
+        }
+
+        .auth-side {
+            display: none;
+        }
+    }
+</style>
+
+<section class="auth-shell">
+    <div class="auth-layout">
+        <aside class="auth-side">
+            <div class="auth-side-icon"><i class="fa-solid fa-utensils" aria-hidden="true"></i></div>
+            <h2 class="auth-side-title">Bienvenido</h2>
+            <p class="auth-side-text">Inicia sesión para ordenar tus favoritos y reservar tu mesa con facilidad.</p>
+        </aside>
+
+        <div class="card auth-card">
+        <a href="{% url 'home' %}" class="auth-close-btn" aria-label="Regresar al inicio">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </a>
+        <div class="card-header py-3">
+            <img src="{% static 'images/logo.png' %}" alt="Logo oficial Ricas Papas Mary" class="rounded-circle mb-2" style="width:74px; height:74px; object-fit:cover;">
+            <h1 class="h5 mb-0 fw-bold">Ricas Papas Mary</h1>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            <h2 class="h4 text-center mb-4" style="color:#7f1016;">Iniciar sesión</h2>
+
+            {% if form.errors %}
+            <div class="alert alert-danger" role="alert">
+                Usuario o contraseña incorrectos. Verifica tus datos e inténtalo otra vez.
+            </div>
+            {% endif %}
+
+            <form method="post" action="">
+                {% csrf_token %}
+                {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+                <div class="mb-3">
+                    <label for="id_username" class="form-label text-dark fw-semibold">Usuario</label>
+                    <input type="text" id="id_username" name="username" class="form-control" required autocomplete="username" placeholder="Escribe tu usuario">
+                </div>
+
+                <div class="mb-4">
+                    <label for="id_password" class="form-label text-dark fw-semibold">Contraseña</label>
+                    <div class="input-group">
+                        <input type="password" id="id_password" name="password" class="form-control" required autocomplete="current-password" placeholder="Escribe tu contraseña">
+                        <button type="button" class="btn password-toggle-btn" data-target="id_password" aria-label="Mostrar contraseña"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn auth-btn w-100 py-2"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Entrar</button>
+            </form>
+
+            <p class="text-center mt-4 mb-0 text-dark">
+                ¿Aún no tienes cuenta? <a href="{% url 'registro' %}" class="fw-bold" style="color:#b21e29;">Crea una aquí</a>
+            </p>
+        </div>
+        </div>
+
+        <aside class="auth-side">
+            <div class="auth-side-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></div>
+            <h2 class="auth-side-title">Todo más fácil</h2>
+            <p class="auth-side-text">Reserva tu mesa, arma tu pedido y consulta tus compras.</p>
+        </aside>
+    </div>
+</section>
+
+<script>
+    (function () {
+        function bindClickFeedback() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+
+            var interactiveTargets = document.querySelectorAll('.auth-btn, .btn-nav-sesion, .password-toggle-btn');
+            interactiveTargets.forEach(function (element) {
+                element.addEventListener('click', function () {
+                    element.classList.remove('btn-click-feedback');
+                    void element.offsetWidth;
+                    element.classList.add('btn-click-feedback');
+                    window.setTimeout(function () {
+                        element.classList.remove('btn-click-feedback');
+                    }, 260);
+                });
+            });
+        }
+
+        bindClickFeedback();
+
+        document.querySelectorAll('.password-toggle-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const target = document.getElementById(button.dataset.target);
+                if (!target) {
+                    return;
+                }
+
+                const isPassword = target.type === 'password';
+                target.type = isPassword ? 'text' : 'password';
+                button.innerHTML = isPassword
+                    ? '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>'
+                    : '<i class="fa-solid fa-eye" aria-hidden="true"></i>';
+                button.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            });
+        });
+    })();
+</script>
+{% endblock %}

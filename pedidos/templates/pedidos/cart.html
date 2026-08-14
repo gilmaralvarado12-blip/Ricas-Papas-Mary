@@ -1,0 +1,257 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="tarjeta order-ui" data-animate-module>
+    <div class="order-body">
+        <div class="module-header">
+            <div class="module-heading">
+                <span class="module-kicker">Carrito</span>
+                <h2 class="order-title module-title">Tu pedido</h2>
+            </div>
+            <a href="{% url 'home' %}" class="btn btn-light btn-sm float-end" aria-label="Volver al inicio"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+        </div>
+
+        {% if items %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 order-table">
+                <thead>
+                    <tr>
+                        <th>Plato</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-end">Editar / quitar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td>
+                            <strong class="cart-item-name">{{ it.producto.nombre }}</strong>
+                            <div class="small cart-item-price">${{ it.producto.precio|floatformat:2 }} c/u</div>
+                        </td>
+                        <td class="text-center">
+                            <div class="qty-control">
+                                <form method="post" action="{% url 'pedidos:update_cart_item' it.producto.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="decrease">
+                                    <button type="submit" class="btn btn-sm">-</button>
+                                </form>
+                                <form method="post" action="{% url 'pedidos:update_cart_item' it.producto.id %}"
+                                    class="d-inline-flex align-items-center gap-1">
+                                    {% csrf_token %}
+                                    <input type="number" name="quantity" min="1" value="{{ it.qty }}"
+                                        class="form-control form-control-sm js-cart-qty-input"
+                                        data-unit-price="{{ it.producto.precio }}" data-row-id="{{ it.producto.id }}"
+                                        style="width:70px; text-align:center;">
+                                    <button type="submit" class="btn btn-sm"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Guardar</button>
+                                </form>
+                                <form method="post" action="{% url 'pedidos:update_cart_item' it.producto.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="increase">
+                                    <button type="submit" class="btn btn-sm">+</button>
+                                </form>
+                            </div>
+                        </td>
+                        <td class="text-end price-strong js-cart-row-subtotal" data-row-id="{{ it.producto.id }}">${{
+                            it.subtotal|floatformat:2 }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'pedidos:remove_from_cart' it.producto.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-order-danger" title="Quitar este producto del carrito"><i class="fa-solid fa-trash" aria-hidden="true"></i> Quitar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- NUEVA PESTAÑA: Agregar más platos (inline) -->
+        <div class="mt-4">
+            <div class="d-flex gap-2 mb-3">
+                <button id="tab-summary-btn" class="btn tab-switch active">Resumen del pedido</button>
+                <button id="tab-add-btn" class="btn tab-switch">Agregar más platos</button>
+            </div>
+
+            <div id="tab-summary" class="tab-pane active">
+                <div class="d-flex justify-content-end mt-3">
+                    <div class="p-3 cart-total-box">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold">Total a pagar</span>
+                            <span class="price-strong" id="cart-total-live">${{ total|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-add" class="tab-pane" style="display:none;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="btn-group" role="group" aria-label="Categorias">
+                        <button class="btn btn-sm btn-outline-secondary js-cat-filter" data-cat="all">Todos</button>
+                        <button class="btn btn-sm btn-outline-secondary js-cat-filter" data-cat="combos">Combos</button>
+                        <button class="btn btn-sm btn-outline-secondary js-cat-filter" data-cat="papas">Papas</button>
+                        <button class="btn btn-sm btn-outline-secondary js-cat-filter" data-cat="bebidas">Bebidas</button>
+                    </div>
+                    <input type="search" id="cart-search" placeholder="Buscar plato..." class="form-control form-control-sm" style="max-width:300px;">
+                </div>
+
+                <div class="menu-products-grid cart-inline-products" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px;">
+                    {% for producto in productos %}
+                    <div class="producto-card" data-name="{{ producto.nombre|lower }}" data-cat="{% if 'combo' in producto.nombre|lower %}combos{% elif 'papa' in producto.nombre|lower %}papas{% elif 'bebida' in producto.nombre|lower %}bebidas{% else %}otros{% endif %}">
+                        {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="producto-imagen">
+                        {% else %}
+                        <div class="producto-imagen-vacia"><i class="fa-solid fa-utensils" aria-hidden="true"></i></div>
+                        {% endif %}
+                        <div class="producto-info">
+                            <h4 style="margin:0; font-size:0.95rem;">{{ producto.nombre }}</h4>
+                            <div class="small">${{ producto.precio|floatformat:2 }}</div>
+                        </div>
+                        <form method="post" action="{% url 'pedidos:add_to_cart' producto.id %}" class="producto-accion">
+                            {% csrf_token %}
+                            <div style="display:flex; gap:6px; align-items:center; margin-top:8px;">
+                                <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm" style="width:72px;">
+                                <button class="btn btn-sm" type="submit"><i class="fa-solid fa-cart-plus" aria-hidden="true"></i> Agregar</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% empty %}
+                    <p>No hay productos disponibles para agregar.</p>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+
+        <div class="module-actions-bottom">
+            <a class="btn btn-order-neutral action-left" href="{% url 'ver_menu' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+            <div class="action-right">
+                <form method="post" action="{% url 'pedidos:clear_cart' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-order-danger"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Vaciar pedido</button>
+                </form>
+                <a class="btn btn-order-primary" href="{% url 'pedidos:checkout' %}"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Continuar</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="order-empty">
+            <div class="order-empty-icon"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></div>
+            <h3 class="order-empty-title">Tu pedido está vacío</h3>
+            <p class="order-empty-text">Explora el menú y agrega tus platos para empezar tu compra.</p>
+            <a class="btn" href="{% url 'ver_menu' %}"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Ir al menú</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var qtyInputs = document.querySelectorAll('.js-cart-qty-input');
+        var totalEl = document.getElementById('cart-total-live');
+
+        if (qtyInputs && qtyInputs.length && totalEl) {
+            function formatMoney(value) {
+                return '$' + value.toFixed(2);
+            }
+
+            function updateSummary() {
+                var total = 0;
+
+                qtyInputs.forEach(function (input) {
+                    var unitPrice = parseFloat(input.dataset.unitPrice || '0');
+                    var rowId = input.dataset.rowId;
+                    var quantity = parseInt(input.value, 10);
+
+                    if (isNaN(quantity) || quantity < 1) {
+                        quantity = 1;
+                        input.value = quantity;
+                    }
+
+                    var subtotal = unitPrice * quantity;
+                    total += subtotal;
+
+                    var subtotalEl = document.querySelector('.js-cart-row-subtotal[data-row-id="' + rowId + '"]');
+                    if (subtotalEl) {
+                        subtotalEl.textContent = formatMoney(subtotal);
+                    }
+                });
+
+                totalEl.textContent = formatMoney(total);
+            }
+
+            qtyInputs.forEach(function (input) {
+                input.addEventListener('input', updateSummary);
+                input.addEventListener('change', updateSummary);
+            });
+
+            updateSummary();
+        }
+
+        // Tab switching for cart / add products
+        var tabSummaryBtn = document.getElementById('tab-summary-btn');
+        var tabAddBtn = document.getElementById('tab-add-btn');
+        var tabSummary = document.getElementById('tab-summary');
+        var tabAdd = document.getElementById('tab-add');
+
+        function showSummary() {
+            tabSummary.classList.add('active');
+            tabSummary.style.display = '';
+            tabAdd.classList.remove('active');
+            tabAdd.style.display = 'none';
+            tabSummaryBtn.classList.add('active');
+            tabAddBtn.classList.remove('active');
+        }
+
+        function showAdd() {
+            tabAdd.classList.add('active');
+            tabAdd.style.display = '';
+            tabSummary.classList.remove('active');
+            tabSummary.style.display = 'none';
+            tabAddBtn.classList.add('active');
+            tabSummaryBtn.classList.remove('active');
+        }
+
+        if (tabSummaryBtn && tabAddBtn && tabSummary && tabAdd) {
+            tabSummaryBtn.addEventListener('click', function (e) { e.preventDefault(); showSummary(); });
+            tabAddBtn.addEventListener('click', function (e) { e.preventDefault(); showAdd(); });
+        }
+
+        // Category filter + search inside the add products tab
+        var catBtns = document.querySelectorAll('.js-cat-filter');
+        var searchInput = document.getElementById('cart-search');
+        var productCards = document.querySelectorAll('.cart-inline-products .producto-card');
+
+        function filterProducts(cat, query) {
+            var q = (query || '').trim().toLowerCase();
+            productCards.forEach(function (card) {
+                var name = (card.dataset.name || '').toLowerCase();
+                var cardCat = (card.dataset.cat || 'otros').toLowerCase();
+                var matchesCat = (cat === 'all') || (cardCat === cat);
+                var matchesQuery = !q || name.indexOf(q) !== -1;
+                card.style.display = (matchesCat && matchesQuery) ? '' : 'none';
+            });
+        }
+
+        catBtns.forEach(function (b) {
+            b.addEventListener('click', function () {
+                var cat = b.dataset.cat || 'all';
+                filterProducts(cat, searchInput ? searchInput.value : '');
+                // mark active
+                catBtns.forEach(function (x) { x.classList.remove('active'); });
+                b.classList.add('active');
+            });
+        });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                // find active category
+                var active = 'all';
+                catBtns.forEach(function (x) { if (x.classList.contains('active')) active = x.dataset.cat || 'all'; });
+                filterProducts(active, searchInput.value);
+            });
+        }
+
+    });
+</script>
+{% endblock %}

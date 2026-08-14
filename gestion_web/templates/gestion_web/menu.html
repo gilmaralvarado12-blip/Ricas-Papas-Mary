@@ -1,0 +1,1214 @@
+{% extends 'gestion_web/home.html' %}
+{% block content %}
+
+<style>
+    /* Botones del módulo: forzamos paleta rojo/dorado para evitar herencia blanca de Bootstrap en esta vista */
+    .modulo-unificado-container .btn,
+    .modulo-unificado-container button.btn,
+    .modulo-unificado-container a.btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        background: linear-gradient(135deg, #ffb703 0%, #ffd166 100%);
+        color: #4a2a00;
+        border: 1px solid rgba(245, 158, 11, 0.55);
+        border-radius: 999px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(255, 183, 3, 0.28);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .modulo-unificado-container .btn:hover,
+    .modulo-unificado-container button.btn:hover,
+    .modulo-unificado-container a.btn:hover {
+        color: #3a2100;
+        transform: translateY(-2px);
+        filter: brightness(1.03);
+        box-shadow: 0 14px 26px rgba(255, 183, 3, 0.34);
+    }
+
+    .modulo-unificado-container .btn-order-primary,
+    .modulo-unificado-container button.btn-order-primary,
+    .modulo-unificado-container a.btn-order-primary {
+        background: linear-gradient(135deg, #b21e29 0%, #8d1018 100%);
+        color: #ffffff;
+        border-color: rgba(127, 16, 22, 0.55);
+        box-shadow: 0 10px 20px rgba(178, 30, 41, 0.30);
+    }
+
+    .modulo-unificado-container .btn-order-primary:hover,
+    .modulo-unificado-container button.btn-order-primary:hover,
+    .modulo-unificado-container a.btn-order-primary:hover {
+        color: #ffffff;
+        box-shadow: 0 15px 26px rgba(178, 30, 41, 0.36);
+    }
+
+    .modulo-unificado-container .btn-order-danger,
+    .modulo-unificado-container button.btn-order-danger,
+    .modulo-unificado-container a.btn-order-danger {
+        background: linear-gradient(135deg, #c61e1e 0%, #8f0f17 100%);
+        color: #ffffff;
+        border-color: rgba(127, 16, 22, 0.55);
+    }
+
+    .modulo-unificado-container {
+        position: relative; /* necesario para posicionar el botón X */
+        width: min(99vw, 1900px);
+        margin: 22px auto;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        color: #333;
+    }
+
+    /* Botón X en la esquina superior derecha del módulo */
+    .modulo-close-x {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #b21e29 0%, #8d1018 100%); /* rojo del sitio */
+        border: 1px solid rgba(127, 16, 22, 0.55);
+        border-radius: 50%;
+        color: #ffffff; /* icono en blanco para contraste */
+        text-decoration: none;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        z-index: 25;
+    }
+
+    .modulo-close-x:hover,
+    .modulo-close-x:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 22px rgba(0,0,0,0.18);
+        text-decoration: none;
+        filter: brightness(1.03);
+    }
+
+    .module-panel {
+        background: #fff;
+        border: 1.5px solid #edf2f7;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        height: 100%;
+    }
+
+    .module-status-card {
+        border: 1.5px solid #edf2f7;
+        padding: 15px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        animation: fadeLift 0.38s ease;
+    }
+
+    .tabs-header {
+        display: flex;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 18px;
+        text-align: center;
+        background: linear-gradient(135deg, #ffb703 0%, #ffd166 100%);
+        border: none;
+        font-weight: 700;
+        font-size: 1em;
+        color: #4a2a00;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn.active {
+        color: #ffffff;
+        border-bottom: 3px solid #7f1016;
+        background: linear-gradient(135deg, #b21e29 0%, #8d1018 100%);
+    }
+
+    .tab-content {
+        display: block;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(12px);
+        padding: 0 20px;
+        pointer-events: none;
+        visibility: hidden;
+        transition: max-height 0.45s ease, opacity 0.28s ease, transform 0.35s ease, padding 0.35s ease;
+    }
+
+    .tab-content.active {
+        max-height: 5000px;
+        opacity: 1;
+        transform: translateY(0);
+        padding: 20px;
+        pointer-events: auto;
+        visibility: visible;
+        animation: fadeLift 0.45s ease;
+    }
+
+    .tab-content.is-leaving {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    .tab-content.is-entering {
+        animation: fadeLift 0.35s ease;
+    }
+
+    .tab-content.reservation-only-hidden {
+        display: none !important;
+    }
+
+    .btn-mesa-select {
+        padding: 9px 8px;
+        border: 1px solid #ffb703;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #ffb703 0%, #ffd166 100%);
+        color: #5c2d00;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .reserva-step-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 5px;
+        border-radius: 10px;
+        background: #f8fafc;
+    }
+
+    .reserva-step-btn {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #64748b;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .reserva-step-btn.active {
+        background: linear-gradient(135deg, #b21e29 0%, #8d1018 100%);
+        border-color: #8d1018;
+        color: #fff;
+    }
+
+    .reserva-step {
+        display: none;
+    }
+
+    .reserva-step.active {
+        display: block;
+        animation: fadeLift 0.3s ease;
+    }
+
+    .reserva-platos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        max-height: 560px;
+        overflow-y: auto;
+        padding: 2px 4px 2px 0;
+    }
+
+    .reserva-plato-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .reserva-plato-card img,
+    .reserva-plato-imagen-vacia {
+        width: 100%;
+        height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    .reserva-plato-imagen-vacia {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    .reserva-plato-card h4 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 0.95rem;
+    }
+
+    .reserva-plato-card .producto-precio {
+        display: block;
+        margin-top: 3px;
+    }
+
+    .reserva-plato-controls {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-top: auto;
+    }
+
+    .reserva-plato-controls input[type="number"] {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+    }
+
+    .auth-box {
+        max-width: 450px;
+        margin: 40px auto;
+        padding: 30px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fafafa;
+        text-align: center;
+    }
+
+    .auth-box h2 {
+        color: #b21e29;
+        margin-bottom: 10px;
+    }
+
+    .auth-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #ffb703 0%, #ffd166 100%);
+        color: #4a2a00;
+        border: 1px solid rgba(245, 158, 11, 0.55);
+        border-radius: 999px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    .menu-cart-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+        align-items: start;
+    }
+
+    .menu-products-scroll {
+        max-height: 72vh;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+
+    .menu-products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px;
+    }
+
+    .producto-card {
+        border: 1.5px solid #edf2f7;
+        border-radius: 12px;
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0 6px 14px rgba(17, 24, 39, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .producto-imagen,
+    .producto-imagen-vacia {
+        width: 100%;
+        height: 138px;
+        border-radius: 10px;
+    }
+
+    .producto-imagen {
+        object-fit: cover;
+    }
+
+    .producto-imagen-vacia {
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 1.2rem;
+    }
+
+    .producto-info h4 {
+        margin: 0;
+        color: #1a202c;
+        font-size: 1rem;
+    }
+
+    .producto-info p {
+        font-size: 0.84em;
+        color: #666;
+        margin: 4px 0 6px;
+        min-height: 32px;
+    }
+
+    .producto-precio {
+        color: #b21e29;
+        font-weight: 700;
+    }
+
+    .producto-accion {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: auto;
+    }
+
+    .producto-accion input {
+        width: 64px;
+        padding: 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+    }
+
+    .producto-accion .btn {
+        flex: 1;
+        border-radius: 999px;
+        padding: 8px 10px;
+        background: linear-gradient(135deg, #ffb703 0%, #ffd166 100%);
+        color: #4a2a00;
+        box-shadow: 0 8px 16px rgba(255, 183, 3, 0.26);
+    }
+
+    .producto-accion .btn:hover {
+        box-shadow: 0 12px 20px rgba(255, 183, 3, 0.32);
+        transform: translateY(-1px);
+    }
+
+    .menu-side-cart {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 18px;
+        width: 100%;
+        height: fit-content;
+    }
+
+    .reserva-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 1.45fr;
+        gap: 25px;
+    }
+
+    /* En pantallas amplias damos más aire horizontal para que ambos paneles se vean menos comprimidos. */
+    @media (min-width: 1400px) {
+        .tab-content.active {
+            padding: 24px 28px;
+        }
+
+        .reserva-grid {
+            grid-template-columns: 1fr 1.55fr;
+            gap: 28px;
+        }
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .status-gold {
+        background: #ffd166;
+        color: #6b2f00;
+        border-color: #ffb703;
+    }
+
+    .status-red {
+        background: #f7d3d6;
+        color: #8d1018;
+        border-color: #d98a92;
+    }
+
+    @media (max-width: 960px) {
+        .menu-cart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .menu-products-scroll {
+            max-height: none;
+            overflow: visible;
+            padding-right: 0;
+        }
+
+        .menu-products-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 640px) {
+        .tab-content.active {
+            padding: 16px;
+        }
+
+        .reserva-step-tabs {
+            flex-direction: column;
+        }
+
+        .reserva-step-btn {
+            width: 100%;
+        }
+
+        .reserva-platos-grid {
+            grid-template-columns: 1fr;
+            max-height: none;
+        }
+
+        .menu-products-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="modulo-unificado-container">
+
+    <!-- Botón "X" para volver al inicio (esquina superior derecha) -->
+    <a href="{% url 'home' %}" class="modulo-close-x" aria-label="Volver al inicio"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+
+    {% if not user.is_authenticated %}
+    <!-- VISTA PARA USUARIOS NO LOGUEADOS (SIN FORMULARIO DUPLICADO DE LOGIN) -->
+    <div class="auth-box">
+        <h2><i class="fa-solid fa-lock" aria-hidden="true"></i> Inicia sesión</h2>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">
+            Para hacer un pedido, reservar una mesa o revisar tus entregas, entra desde la pantalla de acceso.
+        </p>
+
+        <a href="{% url 'login' %}" class="auth-btn"
+            style="display:block; text-align:center; text-decoration:none;"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Entrar</a>
+
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+
+        <p style="font-size: 0.88em; color: #555;">
+            ¿Aún no tienes cuenta?
+            <a href="{% url 'registro' %}" style="color: #b21e29; font-weight: bold;">Crea una aquí</a>
+        </p>
+    </div>
+
+    {% else %}
+    <!-- VISTA DE PESTAÑAS PARA USUARIOS LOGUEADOS -->
+
+    {% if not modulo_reservas and not modulo_pedidos %}
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-menu')"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Pedidos</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-reservas')"><i class="fa-solid fa-chair" aria-hidden="true"></i> Reservas</button>
+    </div>
+    {% endif %}
+
+    <!-- PESTAÑA 1: PEDIDOS -->
+    <div id="tab-menu" class="tab-content active{% if modulo_reservas %} reservation-only-hidden{% endif %}">
+        {% if mensaje_confirmacion %}
+        <div class="feedback-banner success" style="justify-content:center;">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            {{ mensaje_confirmacion }}
+        </div>
+        {% endif %}
+
+        <div class="menu-cart-grid">
+            <div>
+                <h3 style="color: #b21e29; margin-bottom: 15px;"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Menú Disponible</h3>
+                <div class="menu-products-scroll">
+                    <div class="menu-products-grid">
+                        {% for producto in productos %}
+                        <div class="producto-card">
+                            {% if producto.imagen %}
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="producto-imagen">
+                            {% else %}
+                            <div class="producto-imagen-vacia">
+                                <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                            </div>
+                            {% endif %}
+                            <div class="producto-info">
+                                <h4>{{ producto.nombre }}</h4>
+                                <p>{{ producto.descripcion|default:'Plato disponible' }}</p>
+                                <span class="producto-precio">${{ producto.precio }}</span>
+                            </div>
+                            <form method="post" action="{% url 'pedidos:add_to_cart' producto.id %}"
+                                class="producto-accion">
+                                {% csrf_token %}
+                                <input type="number" name="quantity" value="1" min="1"
+                                    aria-label="Cantidad de {{ producto.nombre }}">
+                                <button class="btn" type="submit"><i class="fa-solid fa-cart-plus" aria-hidden="true"></i> Agregar</button>
+                            </form>
+                        </div>
+                        {% empty %}
+                        <p style="color: #777;">No hay platos disponibles por el momento.</p>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="menu-side-cart">
+                <h3 style="color: #b21e29; margin-bottom: 15px;"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Tu pedido</h3>
+                <p style="font-size: 0.88em; color: #64748b; margin-bottom: 12px;">Revisa tu pedido, cambia
+                    cantidades y confirma tu compra.</p>
+
+                <div
+                    style="background: #fff; border: 1px solid #e6e6e6; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span style="font-weight:700; color:#1a202c;">Platos seleccionados</span>
+                        <span style="font-weight:700; color:#b21e29;">{{ cart_count }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:700;">
+                        <span>Total acumulado:</span>
+                        <span style="color:#b21e29;">${{ cart_total|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <a href="{% url 'pedidos:edit_cart' %}" class="btn" style="text-align:center;"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Ver y editar
+                        pedido</a>
+                    <a href="{% url 'pedidos:checkout' %}" class="btn btn-order-primary"
+                        style="text-align:center;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Finalizar Pedido</a>
+                </div>
+
+                <p style="font-size:0.86em; color:#555; margin-top:12px;">Si pagas con transferencia, podras subir tu
+                    comprobante al finalizar.</p>
+
+                <section class="order-status-section" aria-labelledby="order-status-title" style="margin-top: 22px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                    <h3 id="order-status-title" style="color: #b21e29; margin-bottom: 12px; font-size: 1.05em;">
+                        <i class="fa-solid fa-motorcycle" aria-hidden="true"></i> Historial y estado de pedido
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; padding-right: 4px;">
+                        {% for pedido in pedidos %}
+                        <div class="module-status-card pedido-summary" data-pedido-id="{{ pedido.id }}" style="display: block; cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                                <strong>Pedido #000{{ pedido.id }}</strong>
+                                <small style="color:#64748b;">{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                {% if pedido.estado == 'PENDIENTE_PAGO' and not pedido.tiene_pago_aprobado %}
+                                <span class="badge-status status-gold"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Pendiente de pago</span>
+                                {% elif pedido.estado == 'PREPARANDO' %}
+                                <span class="badge-status status-gold"><i class="fa-solid fa-utensils" aria-hidden="true"></i> {{ pedido.estado_display_cliente|default:pedido.estado_display|default:pedido.estado }}</span>
+                                {% elif pedido.estado == 'ENTREGADO' %}
+                                <span class="badge-status status-red"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> {{ pedido.estado_display_cliente|default:pedido.estado_display|default:pedido.estado }}</span>
+                                {% elif pedido.estado == 'CANCELADO' %}
+                                <span class="badge-status status-red"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i> Cancelado</span>
+                                {% else %}
+                                <span class="badge-status status-gold">{{ pedido.estado_display_cliente|default:pedido.estado_display|default:pedido.estado }}</span>
+                                {% endif %}
+                            </div>
+                            <div style="margin-top: 9px; color:#8d1018; font-size:0.85em; font-weight:700;">
+                                <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                                {% if pedido.tipo == 'DOMICILIO' %}
+                                Tiempo estimado: {{ pedido.tiempo_estimado_entrega|default:'Por confirmar' }}
+                                {% elif pedido.estado == 'CANCELADO' %}
+                                Pedido cancelado.
+                                {% else %}
+                                Listo aproximadamente en 30 minutos.
+                                {% endif %}
+                            </div>
+                            {% if pedido.estado == 'PENDIENTE_PAGO' or pedido.estado == 'PENDIENTE' or pedido.estado == 'PAGADO' %}
+                            <form method="post" action="{% url 'pedidos:cancel_order' pedido.id %}" style="margin-top: 10px;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-order-neutral" style="width:100%;" onclick="return confirm('¿Deseas cancelar este pedido?');">
+                                    <i class="fa-solid fa-ban" aria-hidden="true"></i> Cancelar pedido
+                                </button>
+                            </form>
+                            <small style="display:block; margin-top:5px; color:#64748b;">Disponible hasta que empiece la preparación.</small>
+                            {% elif pedido.estado == 'PREPARANDO' %}
+                            <small style="display:block; margin-top:8px; color:#991b1b; font-weight:700;">No se puede cancelar: el pedido está en preparación.</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- Contenido oculto con los detalles del pedido para mostrar en el panel lateral -->
+                        <div id="pedido-detalle-{{ pedido.id }}" class="pedido-detalle" style="display:none;">
+                            <h4>Items del pedido #000{{ pedido.id }}</h4>
+                            <ul style="list-style:none; padding-left:0; margin-top:8px;">
+                                {% for d in pedido.detalles.all %}
+                                <li style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #eee;">
+                                    <div>
+                                        <strong>{{ d.producto.nombre }}</strong>
+                                        <div style="font-size:0.9rem; color:#6b7280;">Cantidad: {{ d.cantidad }}</div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <div style="font-weight:700; color:#b21e29;">${{ d.precio_unitario|floatformat:2 }}</div>
+                                        <div style="font-size:0.9rem; color:#6b7280;">Subtotal: ${{ d.precio_unitario|floatformat:2|floatformat:2|stringformat:"s"|add:'' }}</div>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <div style="margin-top:10px; text-align:right; font-weight:700; color:#1a202c;">Total: ${{ pedido.total|floatformat:2 }}</div>
+                        </div>
+                        {% empty %}
+                        <div style="text-align:center; color:#64748b; padding:16px 4px;">
+                            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                            <p style="margin:6px 0 0;">Aún no tienes pedidos confirmados.</p>
+                            <small>Cuando realices uno, aquí verás su estado y tiempo estimado.</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Panel lateral para mostrar detalles de un pedido seleccionado -->
+    <aside id="pedidoDrawer" class="pedido-drawer" aria-hidden="true">
+        <div class="pedido-drawer-header d-flex align-items-center justify-content-between">
+            <h3 id="pedidoDrawerTitle" style="margin:0; color:#b21e29;">Detalle del pedido</h3>
+            <button id="pedidoDrawerClose" class="btn" aria-label="Cerrar detalle"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="pedidoDrawerContent" class="pedido-drawer-content" style="margin-top:12px; overflow:auto; max-height:70vh;">
+            <!-- contenido inyectado desde el pedido oculto -->
+        </div>
+    </aside>
+
+    <style>
+        /* Estilos del drawer (panel lateral dentro del contenedor) */
+        .pedido-drawer {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 380px;
+            max-width: calc(100% - 32px);
+            background: #ffffff;
+            border: 1px solid #e6e6e6;
+            border-radius: 12px;
+            box-shadow: 0 20px 48px rgba(0,0,0,0.18);
+            padding: 16px;
+            z-index: 60;
+            display: none; /* se muestra con JS */
+        }
+
+        .pedido-drawer-header .btn {
+            background: linear-gradient(135deg, #b21e29 0%, #8d1018 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            min-width: 40px;
+        }
+
+        /* Pequeño indicador que hace evidente que la tarjeta es clicable */
+        .pedido-summary:hover {
+            box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+    </style>
+
+    <script>
+        // Manejo del panel lateral de detalles (evita dependencias adicionales)
+        document.addEventListener('DOMContentLoaded', function () {
+            var summaryEls = document.querySelectorAll('.pedido-summary');
+            var drawer = document.getElementById('pedidoDrawer');
+            var drawerContent = document.getElementById('pedidoDrawerContent');
+            var drawerTitle = document.getElementById('pedidoDrawerTitle');
+            var drawerClose = document.getElementById('pedidoDrawerClose');
+
+            if (!summaryEls || !drawer) return;
+
+            function openDrawerFor(id) {
+                var source = document.getElementById('pedido-detalle-' + id);
+                if (!source) return;
+                drawerContent.innerHTML = source.innerHTML;
+                drawerTitle.textContent = 'Pedido #' + String(id).padStart(3, '0');
+                drawer.style.display = 'block';
+                drawer.setAttribute('aria-hidden', 'false');
+                // llevar foco al botón cerrar para accesibilidad
+                drawerClose.focus();
+            }
+
+            function closeDrawer() {
+                drawer.style.display = 'none';
+                drawer.setAttribute('aria-hidden', 'true');
+                drawerContent.innerHTML = '';
+            }
+
+            summaryEls.forEach(function (el) {
+                el.addEventListener('click', function (e) {
+                    // si se clickeó un botón dentro del resumen (ej: cancelar) dejar el comportamiento por defecto
+                    if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'a') return;
+                    var id = el.getAttribute('data-pedido-id');
+                    openDrawerFor(id);
+                });
+            });
+
+            drawerClose.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                closeDrawer();
+            });
+
+            // cerrar si se hace click fuera del drawer (pero dentro del contenedor principal)
+            document.addEventListener('click', function (ev) {
+                if (!drawer || drawer.style.display !== 'block') return;
+                var target = ev.target;
+                // Si el click fue dentro del drawer o sobre un resumen, no cerrar
+                if (drawer.contains(target)) return;
+                if (target.closest('.pedido-summary')) return;
+                closeDrawer();
+            });
+
+            // cerrar con Escape
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape' && drawer.style.display === 'block') {
+                    closeDrawer();
+                }
+            });
+        });
+    </script>
+
+    <!-- PESTAÑA 2: RESERVAS -->
+    <div id="tab-reservas" class="tab-content{% if modulo_reservas %} active{% endif %}{% if modulo_pedidos %} reservation-only-hidden{% endif %}">
+        <div class="reserva-grid">
+            <div class="module-panel">
+                <h3 style="color: #b21e29; margin-bottom: 15px;"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Nueva Reserva</h3>
+                <p style="margin: -8px 0 14px; color: #64748b; font-size: 0.84em;">
+                    <i class="fa-solid fa-clock" aria-hidden="true"></i> Atención: de 09:00 a 21:00.
+                </p>
+                <div class="reserva-step-tabs" role="tablist" aria-label="Pasos de la reserva">
+                    <button type="button" class="reserva-step-btn active" data-reserva-step="tab-reserva-datos">
+                        <i class="fa-solid fa-chair" aria-hidden="true"></i> Mesa y datos
+                    </button>
+                    <button type="button" class="reserva-step-btn" data-reserva-step="tab-reserva-platos">
+                        <i class="fa-solid fa-utensils" aria-hidden="true"></i> Platos opcionales
+                    </button>
+                </div>
+                <form id="reserva-form" method="POST" action="{% url 'crear_reserva' %}">
+                    {% csrf_token %}
+                    <!-- Campo oculto que el backend usa para saber qué mesa eligió el cliente -->
+                    <input type="hidden" id="mesa_id" name="mesa_id" value="">
+
+                    <div id="tab-reserva-datos" class="reserva-step active">
+                    <div style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 0.85em; font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Fecha</label>
+                        <input type="date" name="fecha" required
+                            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 0.85em; font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Hora</label>
+                        <input type="time" name="hora" required
+                            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 0.85em; font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Personas</label>
+                        <input type="number" name="personas" min="1" max="20" required
+                            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+
+                    <!-- Selector visual de mesas DISPONIBLES enviado por la vista -->
+                    <div style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 0.85em; font-weight: bold; color: #555; display: block; margin-bottom: 8px;">Selecciona
+                            una mesa disponible</label>
+                        <div id="mesa-map"
+                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px;">
+                            {% for mesa in mesas_disponibles %}
+                            <!-- Cada botón representa una mesa disponible validada por estado desde backend -->
+                            <button type="button" class="mesa-btn btn-mesa-select" data-mesa-id="{{ mesa.id }}"
+                                data-mesa-numero="{{ mesa.numero }}"
+                                style="">
+                                Mesa {{ mesa.numero }}
+                            </button>
+                            {% empty %}
+                            <p style="margin:0; color:#991b1b; font-size:0.88em;">
+                                No hay mesas disponibles en este momento.
+                            </p>
+                            {% endfor %}
+                        </div>
+                        <p id="mesa-selection-label" style="margin: 8px 0 0 0; font-size: 0.82em; color: #475569;">
+                            Aun no has seleccionado una mesa.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label
+                            style="font-size: 0.85em; font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Notas
+                            adicionales</label>
+                        <textarea name="notas" rows="2"
+                            style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; resize: none;"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-order-primary continuar-platos" style="width: 100%;">
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Continuar a platos opcionales
+                    </button>
+                    </div>
+
+                    <div id="tab-reserva-platos" class="reserva-step">
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="margin: 0 0 4px; color: #b21e29;">Platos opcionales para tu reserva</h4>
+                            <p style="margin: 0; font-size: 0.84em; color: #64748b;">
+                                Elige los platos y cantidades que deseas que preparemos para tu llegada.
+                            </p>
+                        </div>
+                        <div class="reserva-platos-grid">
+                            {% for producto in productos %}
+                            <div class="reserva-plato-card">
+                                {% if producto.imagen %}
+                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                                {% else %}
+                                <div class="reserva-plato-imagen-vacia">
+                                    <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h4>{{ producto.nombre }}</h4>
+                                    <span class="producto-precio">${{ producto.precio|floatformat:2 }}</span>
+                                </div>
+                                <div class="reserva-plato-controls">
+                                    <input type="checkbox" name="prepedido_productos" value="{{ producto.id }}"
+                                        aria-label="Seleccionar {{ producto.nombre }}">
+                                    <input type="number" name="prepedido_cantidad_{{ producto.id }}" value="0" min="0"
+                                        data-price="{{ producto.precio }}" form="reserva-form"
+                                        aria-label="Cantidad de {{ producto.nombre }}">
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p style="color: #991b1b;">No hay platos disponibles para agregar a la reserva.</p>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-order-primary" style="width: 100%; margin-top: 16px;">
+                            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Agendar Reserva
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="module-panel">
+                <h3 style="color: #b21e29; margin-bottom: 15px;">Mis Reservas</h3>
+                {% if reserva_confirmacion %}
+                <div id="reserva-confirmacion-banner" class="feedback-banner success">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                    {{ reserva_confirmacion }}
+                </div>
+                {% endif %}
+                {% if reserva_error %}
+                <div id="reserva-error-banner" class="feedback-banner error">
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                    {{ reserva_error }}
+                </div>
+                {% if reserva_sugerida_mesa_id %}
+                <!-- Botón para que el cliente acepte rápido la mesa sugerida por el sistema -->
+                <button type="button" id="aceptar-mesa-sugerida" data-sugerida-id="{{ reserva_sugerida_mesa_id }}"
+                    class="btn" style="margin-bottom:12px;">
+                    Usar mesa sugerida
+                </button>
+                {% endif %}
+                {% if reserva_sugerencias %}
+                <div
+                    style="background-color: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.9em;">
+                    <strong>Horarios cercanos disponibles:</strong>
+                    <ul style="margin: 8px 0 0 18px; padding: 0;">
+                        {% for sugerencia in reserva_sugerencias %}
+                        <li>{{ sugerencia.hora }} - Mesa {{ sugerencia.mesa_numero }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% endif %}
+                <!-- Contenedor con altura fija y scroll vertical siempre visible.
+                     Esto asegura que en la seccion "Mis Reservas" aparezca la barra
+                     de subir y bajar exactamente en el panel derecho marcado por el usuario. -->
+                <div style="height: 360px; overflow-y: scroll; padding-right: 4px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #edf2f7; text-align: left; color: #777;">
+                                <th style="padding: 8px;">Fecha/Hora</th>
+                                <th style="padding: 8px; text-align: center;">Mesa</th>
+                                <th style="padding: 8px; text-align: center;">Personas</th>
+                                <th style="padding: 8px; text-align: center;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reserva in reservas %}
+                            <tr style="border-bottom: 1px solid #edf2f7;">
+                                <td style="padding: 10px 8px;">{{ reserva.fecha }} - {{ reserva.hora }}</td>
+                                <td style="padding: 10px 8px; text-align: center;">
+                                    {% if reserva.mesa %}
+                                    Mesa {{ reserva.mesa.numero }}
+                                    {% else %}
+                                    Por asignar
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 10px 8px; text-align: center;">{{ reserva.numero_personas }} pers.
+                                </td>
+                                <td style="padding: 10px 8px; text-align: center;">
+                                    <span class="badge-status status-gold">{{ reserva.estado_display|default:reserva.estado }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" style="padding: 20px; text-align: center; color: #999;">No tienes
+                                    reservas
+                                    agendadas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+</div>
+
+<script>
+    // Esta función maneja el sistema de pestañas del modulo principal.
+    // Mantiene una única pestaña visible para una experiencia de navegación limpia.
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        var target = document.getElementById(tabName);
+        if (!target) {
+            return;
+        }
+
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            if (tabcontent[i].classList.contains("active") && tabcontent[i].id !== tabName) {
+                tabcontent[i].classList.add("is-leaving");
+            }
+            tabcontent[i].classList.remove("active");
+        }
+
+        tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+
+        target.classList.remove("is-leaving");
+        target.classList.add("active", "is-entering");
+        setTimeout(function () {
+            target.classList.remove("is-entering");
+        }, 360);
+
+        evt.currentTarget.classList.add("active");
+    }
+
+    // La selección de platos es un paso independiente, pero conserva los datos
+    // de la reserva porque ambos pasos pertenecen al mismo formulario.
+    (function () {
+        var stepButtons = document.querySelectorAll('.reserva-step-btn');
+        var steps = document.querySelectorAll('.reserva-step');
+        var reservaForm = document.getElementById('reserva-form');
+        if (!stepButtons.length || !steps.length || !reservaForm) {
+            return;
+        }
+
+        function showReservationStep(stepId) {
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].classList.toggle('active', steps[i].id === stepId);
+            }
+            for (var j = 0; j < stepButtons.length; j++) {
+                stepButtons[j].classList.toggle(
+                    'active',
+                    stepButtons[j].dataset.reservaStep === stepId
+                );
+            }
+        }
+
+        for (var i = 0; i < stepButtons.length; i++) {
+            stepButtons[i].addEventListener('click', function () {
+                if (this.dataset.reservaStep === 'tab-reserva-platos') {
+                    if (!reservaForm.checkValidity()) {
+                        reservaForm.reportValidity();
+                        return;
+                    }
+                    if (!document.getElementById('mesa_id').value) {
+                        alert('Selecciona una mesa disponible antes de elegir tus platos.');
+                        return;
+                    }
+                }
+                showReservationStep(this.dataset.reservaStep);
+            });
+        }
+
+        var continuarBtn = document.querySelector('.continuar-platos');
+        if (continuarBtn) {
+            continuarBtn.addEventListener('click', function () {
+                var platosBtn = document.querySelector('[data-reserva-step="tab-reserva-platos"]');
+                if (platosBtn) {
+                    platosBtn.click();
+                }
+            });
+        }
+    })();
+
+    // Script del selector de mesas:
+    // 1) Marca visualmente la mesa elegida en el "mapa".
+    // 2) Sincroniza la selección con el input oculto `mesa_id`.
+    // 3) Permite aceptar una mesa sugerida por backend con un solo clic.
+    (function () {
+        var mesaHiddenInput = document.getElementById('mesa_id');
+        var mesaButtons = document.querySelectorAll('.mesa-btn');
+        var mesaLabel = document.getElementById('mesa-selection-label');
+        var sugeridaBtn = document.getElementById('aceptar-mesa-sugerida');
+
+        // Si la pestaña no está renderizada (caso no autenticado), salimos.
+        if (!mesaHiddenInput || !mesaButtons.length || !mesaLabel) {
+            return;
+        }
+
+        // Pinta el estado visual de todos los botones y deja uno como activo.
+        function setMesaActiva(mesaId) {
+            for (var i = 0; i < mesaButtons.length; i++) {
+                var btn = mesaButtons[i];
+                var isActive = String(btn.dataset.mesaId) === String(mesaId);
+                btn.style.background = isActive
+                    ? 'linear-gradient(135deg, #b21e29 0%, #8d1018 100%)'
+                    : 'linear-gradient(135deg, #ffb703 0%, #ffd166 100%)';
+                btn.style.color = isActive ? '#ffffff' : '#5c2d00';
+                btn.style.borderColor = isActive ? '#7f1016' : '#ffb703';
+            }
+        }
+
+        // Actualiza el campo oculto y la etiqueta de ayuda al usuario.
+        function seleccionarMesa(mesaId, mesaNumero) {
+            mesaHiddenInput.value = mesaId;
+            setMesaActiva(mesaId);
+            mesaLabel.textContent = 'Mesa seleccionada: ' + mesaNumero;
+        }
+
+        // Eventos de clic de cada mesa disponible del mapa.
+        for (var j = 0; j < mesaButtons.length; j++) {
+            mesaButtons[j].addEventListener('click', function () {
+                seleccionarMesa(this.dataset.mesaId, this.dataset.mesaNumero);
+            });
+        }
+
+        // Si backend propuso una mesa alternativa, este botón la acepta y la marca.
+        if (sugeridaBtn) {
+            sugeridaBtn.addEventListener('click', function () {
+                var sugeridaId = this.dataset.sugeridaId;
+                for (var k = 0; k < mesaButtons.length; k++) {
+                    if (String(mesaButtons[k].dataset.mesaId) === String(sugeridaId)) {
+                        seleccionarMesa(mesaButtons[k].dataset.mesaId, mesaButtons[k].dataset.mesaNumero);
+                        break;
+                    }
+                }
+            });
+        }
+    })();
+
+    // Si hay feedback de reserva (éxito/error), forzamos abrir la pestaña de reservas
+    // para que el usuario vea inmediatamente el resultado de su acción.
+    (function () {
+        var reservaConfirmacionBanner = document.getElementById('reserva-confirmacion-banner');
+        var reservaErrorBanner = document.getElementById('reserva-error-banner');
+        if (!reservaConfirmacionBanner && !reservaErrorBanner) {
+            return;
+        }
+
+        var reservasTab = document.getElementById('tab-reservas');
+        var tabcontent = document.getElementsByClassName('tab-content');
+        var tablinks = document.getElementsByClassName('tab-btn');
+
+        for (var i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove('active');
+        }
+        for (var j = 0; j < tablinks.length; j++) {
+            tablinks[j].classList.remove('active');
+        }
+
+        if (reservasTab) {
+            reservasTab.classList.add('active');
+        }
+        if (tablinks.length > 1) {
+            tablinks[1].classList.add('active');
+        }
+    })();
+
+    // Auto-marcar checkbox de prepedido cuando el usuario cambia la cantidad.
+    (function () {
+        // Selecciona todos los inputs de cantidad que siguen el patrón usado en la plantilla.
+        var qtyInputs = document.querySelectorAll('input[name^="prepedido_cantidad_"]');
+        if (!qtyInputs || qtyInputs.length === 0) return;
+
+        qtyInputs.forEach(function (input) {
+            // Inicializamos el subtotal mostrado al cargar la página
+            (function initSubtotal(inp) {
+                try {
+                    var price = parseFloat(inp.getAttribute('data-price') || '0');
+                    var qty = parseInt(inp.value || '0', 10);
+                    var subtotalEl = inp.parentElement.querySelector('.prepedido-subtotal');
+                    if (subtotalEl) {
+                        subtotalEl.textContent = '$' + (price * (isNaN(qty) ? 0 : qty)).toFixed(2);
+                    }
+                } catch (e) { }
+            })(input);
+
+            input.addEventListener('change', function () {
+                try {
+                    var name = this.name; // e.g. prepedido_cantidad_3
+                    var id = name.replace('prepedido_cantidad_', '');
+                    var checkbox = document.querySelector('input[name="prepedido_productos"][value="' + id + '"]');
+                    if (!checkbox) return;
+                    // Marca o desmarca el checkbox según la cantidad.
+                    var val = parseInt(this.value, 10);
+                    if (!isNaN(val) && val > 0) {
+                        checkbox.checked = true;
+                    } else {
+                        checkbox.checked = false;
+                    }
+
+                    // Recalculamos el subtotal visual para este producto.
+                    var price = parseFloat(this.getAttribute('data-price') || '0');
+                    var subtotalEl = this.parentElement.querySelector('.prepedido-subtotal');
+                    if (subtotalEl) {
+                        var newQty = (isNaN(val) ? 0 : val);
+                        subtotalEl.textContent = '$' + (price * newQty).toFixed(2);
+                    }
+                } catch (e) {
+                    // no hacemos nada en fallo de JS para no romper la página
+                }
+            });
+        });
+
+        var productChecks = document.querySelectorAll('input[name="prepedido_productos"]');
+        productChecks.forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                var quantity = document.querySelector(
+                    'input[name="prepedido_cantidad_' + this.value + '"]'
+                );
+                if (!quantity) {
+                    return;
+                }
+                if (this.checked && parseInt(quantity.value || '0', 10) < 1) {
+                    quantity.value = '1';
+                }
+                if (!this.checked) {
+                    quantity.value = '0';
+                }
+            });
+        });
+    })();
+</script>
+
+{% endblock %}

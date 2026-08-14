@@ -1,0 +1,19 @@
+{% extends 'gestion_web/base.html' %}
+{% block contenido %}
+<div class="tarjeta" data-animate-module>
+    <h2>Revisar comprobante del pedido #{{ comprobante.pedido.id }}</h2>
+    {% if comprobante.is_pdf %}
+    <div style="margin-bottom: 1rem;">
+        <a href="{{ comprobante.imagen.url }}" target="_blank" rel="noopener" class="btn btn-order-neutral"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Abrir comprobante PDF</a>
+    </div>
+    {% else %}
+    <img src="{{ comprobante.imagen.url }}" alt="Comprobante"
+        style="max-width: 400px; display:block; margin-bottom: 10px; border-radius: 12px;">
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="validar" class="btn btn-order-primary"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Aprobar</button>
+        <button type="submit" name="action" value="rechazar" class="btn btn-order-danger"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i> Rechazar</button>
+    </form>
+</div>
+{% endblock %}

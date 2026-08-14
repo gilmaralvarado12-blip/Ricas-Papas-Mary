@@ -1,0 +1,20 @@
+<html>
+
+<body>
+  <h2>Reserva confirmada</h2>
+  <p>Hola {{ reserva.cliente.username }},</p>
+  <p>Tu reserva en <strong>Ricas Papas Mary</strong> ha sido confirmada.</p>
+  <ul>
+    {% if reserva.mesa %}
+    <li>Mesa: {{ reserva.mesa.numero }}</li>
+    {% else %}
+    <li>Mesa: Por asignar</li>
+    {% endif %}
+    <li>Fecha: {{ reserva.fecha }}</li>
+    <li>Hora: {{ reserva.hora }}</li>
+    <li>Personas: {{ reserva.numero_personas }}</li>
+  </ul>
+  <p>Te esperamos para disfrutar una experiencia deliciosa.</p>
+</body>
+
+</html>

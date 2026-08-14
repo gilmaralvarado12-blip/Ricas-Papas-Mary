@@ -1,0 +1,7 @@
+Hola {{ pedido.cliente.username }},
+
+Tu comprobante de pago para el pedido #{{ pedido.id }} ha sido rechazado.
+
+Por favor, revisa la información y vuelve a subir el comprobante si es necesario.
+
+Gracias por confiar en Ricas Papas Mary.

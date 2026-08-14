@@ -1,0 +1,104 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title">Seguimiento de entregas</h2>
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Ubicación</th>
+                    <th>Detalles del pedido</th>
+                    <th>Estado entrega</th>
+                    <th>Pago</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in entregas %}
+                <tr>
+                    <td>#{{ e.pedido.id }}</td>
+                    <td>
+                        <strong>{{ e.pedido.cliente.username }}</strong><br>
+                        {% if e.pedido.cliente.telefono %}
+                        <span class="text-muted small">{{ e.pedido.cliente.telefono }}</span><br>
+                        {% endif %}
+                        <span class="text-muted small">{{ e.pedido.cliente.email }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ e.direccion|default:'Sin dirección' }}</strong><br>
+                        <span class="text-muted small">Lat: {{ e.latitud|default:'-' }} · Lng: {{ e.longitud|default:'-'
+                            }}</span><br>
+                        <span class="text-muted small">Distancia: {{ e.distancia_km|default:'-' }} km · ETA: {{ e.tiempo_estimado_minutos|default:'30' }} min</span><br>
+                        {% if e.fuera_rango_estandar %}
+                        <span class="text-warning small">Fuera de rango estándar · Cargo adicional: ${{ e.cargo_adicional|floatformat:2 }}</span><br>
+                        {% endif %}
+                        <a href="{{ e.google_maps_url }}" target="_blank" rel="noopener" class="btn btn-sm mt-2" style="margin-right:6px;"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Ver mapa</a>
+                        <a href="{{ e.google_maps_directions_url }}" target="_blank" rel="noopener" class="btn btn-sm mt-2"><i class="fa-solid fa-route" aria-hidden="true"></i> Cómo llegar</a><br>
+                        <span class="text-muted small">Tipo: {{ e.pedido.get_tipo_display }}</span>
+                    </td>
+                    <td>
+                        <ul class="mb-0 ps-3">
+                            {% for detalle in e.pedido.detalles.all %}
+                            <li>{{ detalle.cantidad }} x {{ detalle.producto.nombre }} - ${{
+                                detalle.precio_unitario|floatformat:2 }}</li>
+                            {% empty %}
+                            <li class="text-muted">No hay detalles disponibles.</li>
+                            {% endfor %}
+                        </ul>
+                        <div class="text-end mt-2">
+                            <strong>Total:</strong> ${{ e.pedido.total|floatformat:2 }}
+                        </div>
+                        <div class="text-muted small">Pedido: {{ e.pedido_estado_display }}</div>
+                    </td>
+                    <td>{{ e.estado_envio }}</td>
+                    <td>
+                        {% if e.pago_actual %}
+                        <strong>{{ e.pago_actual.metodo_pago }}</strong><br>
+                        <span class="text-muted small">{{ e.pago_actual.get_estado_display }}</span>
+                        {% if e.pedido.comprobante %}
+                        <br><a href="{{ e.pedido.comprobante.imagen.url }}" target="_blank" rel="noopener" class="small">Ver comprobante</a>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted small">Sin registro</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if can_update_estado %}
+                        <form method="post" action="{% url 'entregas:actualizar_estado' e.id %}">
+                            {% csrf_token %}
+                            <select name="nuevo_estado" class="form-select form-select-sm mb-2">
+                                <option value="Pendiente" {% if e.estado_envio=='Pendiente' %}selected{% endif %}>
+                                    Pendiente</option>
+                                <option value="En camino" {% if e.estado_envio=='En camino' %}selected{% endif %}>En
+                                    camino</option>
+                                <option value="Entregado" {% if e.estado_envio=='Entregado' %}selected{% endif %}>
+                                    Entregado</option>
+                            </select>
+                            <button class="btn btn-sm btn-primary w-100" type="submit"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Actualizar</button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small">Sin permisos de edición</span>
+                        {% endif %}
+                        {% if e.pago_actual and e.pago_actual.estado != 'CONFIRMADO' %}
+                        <form method="post" action="{% url 'entregas:confirmar_pago' e.id %}" class="mt-2">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-success w-100" type="submit">
+                                <i class="fa-solid fa-money-bill-check" aria-hidden="true"></i> Reportar pago al admin
+                            </button>
+                        </form>
+                        {% elif e.pago_actual %}
+                        <span class="text-success small d-block mt-2"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Pago confirmado</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:18px;">No hay entregas registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endblock %}

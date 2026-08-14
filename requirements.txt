@@ -1,0 +1,7 @@
+Django>=4.2
+Pillow
+django-jazzmin
+psycopg[binary]>=3.2
+dj-database-url
+gunicorn
+whitenoise

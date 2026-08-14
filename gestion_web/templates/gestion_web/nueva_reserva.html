@@ -1,0 +1,146 @@
+{% extends 'gestion_web/home.html' %}
+{% block content %}
+<div class="module-stack" style="max-width: 760px; margin: 0 auto; font-family: 'Poppins', sans-serif;">
+
+    <div class="module-header" style="margin-bottom: 0;">
+        <div class="module-heading">
+            <span class="module-kicker">Reservas</span>
+            <h2 class="module-title">Nueva reserva</h2>
+            <p class="module-subtitle">Agenda tu mesa y revisa tus reservas desde un solo lugar.</p>
+        </div>
+        <a class="btn btn-order-neutral module-back-btn" href="{% url 'ver_menu' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+    </div>
+
+    <!-- FORMULARIO DE NUEVA RESERVA -->
+    <div class="module-card reserva-card">
+
+        <!-- Mensajes de Alerta -->
+        {% if mensaje %}
+        <div
+            style="background-color: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center; border: 1px solid #c3e6cb;">
+            {{ mensaje }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Campo: Fecha -->
+            <div style="margin-bottom: 18px; text-align: left;">
+                <label
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #4a5568; font-size: 0.9em;">Fecha</label>
+                <input type="date" name="fecha" required
+                    style="width: 100%; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95em; outline: none; box-sizing: border-box; color: #4a5568; transition: border-color 0.2s;">
+            </div>
+
+            <!-- Campo: Hora -->
+            <div style="margin-bottom: 18px; text-align: left;">
+                <label
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #4a5568; font-size: 0.9em;">Hora</label>
+                <input type="time" name="hora" required
+                    style="width: 100%; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95em; outline: none; box-sizing: border-box; color: #4a5568; transition: border-color 0.2s;">
+            </div>
+
+            <!-- Campo: Personas -->
+            <div style="margin-bottom: 18px; text-align: left;">
+                <label
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #4a5568; font-size: 0.9em;">Número
+                    de personas</label>
+                <input type="number" name="personas" min="1" max="20" placeholder="Ej. 4" required
+                    style="width: 100%; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95em; outline: none; box-sizing: border-box; color: #4a5568; transition: border-color 0.2s;">
+            </div>
+
+            <!-- Campo: Notas adicionales -->
+            <div style="margin-bottom: 25px; text-align: left;">
+                <label
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #4a5568; font-size: 0.9em;">Comentarios
+                    / Notas adicionales (Opcional)</label>
+                <textarea name="notas" rows="3"
+                    placeholder="Mesa cerca de la ventana, espacio para coche de bebé, etc..."
+                    style="width: 100%; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.95em; outline: none; box-sizing: border-box; color: #4a5568; font-family: inherit; resize: none; transition: border-color 0.2s;"></textarea>
+            </div>
+
+            <!-- Botón Confirmar Reserva -->
+            <button type="submit" class="btn-reserva"
+                style="width: 100%; padding: 14px; background: #b21e29; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.05em; box-shadow: 0px 4px 12px rgba(178, 30, 41, 0.25); transition: background 0.2s, transform 0.1s;">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Confirmar Reserva
+            </button>
+        </form>
+    </div>
+
+    <!-- SECCIÓN: MIS RESERVAS -->
+    <div class="module-card">
+        <div class="module-header">
+            <div class="module-heading">
+                <span class="module-kicker">Historial</span>
+                <h3 class="module-title">Mis reservas</h3>
+            </div>
+        </div>
+
+        <div class="module-table-wrapper">
+            <table class="module-table" style="text-align: left; font-size: 0.9em;">
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th style="text-align: center;">Personas</th>
+                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in reservas %}
+                    <tr style="border-bottom: 1px solid #edf2f7; transition: background 0.2s;">
+                        <td style="padding: 14px 10px; font-weight: 500; color: #2d3748;">
+                            {{ reserva.fecha }} — {{ reserva.hora }}
+                        </td>
+                        <td style="padding: 14px 10px; text-align: center; color: #4a5568;">
+                            {{ reserva.numero_personas }} pers.
+                        </td>
+                        <td style="padding: 14px 10px; text-align: center;">
+                            <span
+                                style="background: #feebc8; color: #c05621; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold;">
+                                {{ reserva.estado_display|default:reserva.estado }}
+                            </span>
+                        </td>
+                        <td style="padding: 14px 10px; text-align: center;">
+                            <!-- Botón o link opcional por si quieren cancelar -->
+                            <span style="color: #cbd5e0; font-size: 0.85em;">Ninguna</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4"
+                            style="padding: 30px 10px; text-align: center; color: #a0aec0; font-style: italic;">
+                            No tienes mesas reservadas todavía.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Efectos de interacción visual -->
+<style>
+    input:focus,
+    textarea:focus {
+        border-color: #b21e29 !important;
+        box-shadow: 0 0 0 3px rgba(178, 30, 41, 0.1);
+    }
+
+    .btn-reserva:hover {
+        background: #991b1b !important;
+        transform: translateY(-1px);
+    }
+
+    .btn-reserva:active {
+        transform: translateY(1px);
+    }
+
+    tbody tr:hover {
+        background-color: #f7fafc;
+    }
+</style>
+{% endblock %}

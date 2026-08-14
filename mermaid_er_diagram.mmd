@@ -1,0 +1,130 @@
+erDiagram
+    USUARIO {
+        int id PK
+        string rol
+        string telefono
+        bool acepta_politica_datos
+        datetime fecha_aceptacion_politica
+        string version_politica_datos
+    }
+    PROVEEDOR {
+        int id PK
+        string nombre_empresa
+        string contacto_nombre
+        string telefono
+        string correo_electronico
+    }
+    INSUMO {
+        int id PK
+        int proveedor_id FK
+        string nombre
+        decimal stock
+        string unidad_medida
+    }
+    PRODUCTO {
+        int id PK
+        string nombre
+        text descripcion
+        decimal precio
+        bool disponible
+        string imagen
+    }
+    INSUMO_PRODUCTO {
+        int id PK
+        int insumo_id FK
+        int producto_id FK
+        decimal cantidad_utilizada
+    }
+    MESA {
+        int id PK
+        int numero
+        int capacidad
+        bool disponible
+        string estado
+    }
+    RESERVA {
+        int id PK
+        int cliente_id FK
+        int mesa_id FK
+        int pedido_id FK
+        date fecha
+        time hora
+        int numero_personas
+        string estado
+        text notes
+    }
+    PEDIDO {
+        int id PK
+        int cliente_id FK
+        string tipo
+        string estado
+        decimal total
+        datetime fecha_creacion
+    }
+    DETALLE_PEDIDO {
+        int id PK
+        int pedido_id FK
+        int producto_id FK
+        int cantidad
+        decimal precio_unitario
+    }
+    ENTREGA {
+        int id PK
+        int pedido_id FK
+        text direccion
+        string estado_envio
+    }
+    PAGO {
+        int id PK
+        int pedido_id FK
+        decimal monto
+        string metodo_pago
+        datetime fecha_pago
+    }
+    FACTURA {
+        int id PK
+        int pago_id FK
+        string numero_factura
+        datetime fecha_emision
+    }
+    COMPROBANTE {
+        int id PK
+        int pedido_id FK
+        string imagen
+        string estado
+        datetime fecha_subida
+        int validado_por_id FK
+    }
+    CART {
+        int id PK
+        int cliente_id FK
+        string session_key
+        string estado
+        datetime creado
+        datetime actualizado
+    }
+    CARTITEM {
+        int id PK
+        int cart_id FK
+        int producto_id FK
+        int cantidad
+        decimal precio_unitario
+    }
+
+    PROVEEDOR ||--o{ INSUMO : suministra
+    INSUMO ||--o{ INSUMO_PRODUCTO : "es parte de"
+    PRODUCTO ||--o{ INSUMO_PRODUCTO : "requiere"
+    USUARIO ||--o{ PEDIDO : crea
+    PEDIDO ||--o{ DETALLE_PEDIDO : contiene
+    PRODUCTO ||--o{ DETALLE_PEDIDO : es_pedido
+    PEDIDO ||--|| ENTREGA : tiene
+    PEDIDO ||--|| PAGO : tiene
+    PAGO ||--|| FACTURA : puede_generar
+    PEDIDO ||--|| COMPROBANTE : puede_tener
+    USUARIO ||--o{ RESERVA : realiza
+    MESA ||--o{ RESERVA : asigna
+    PEDIDO ||--o{ RESERVA : puede_vincular
+    USUARIO ||--o{ CART : usa
+    CART ||--o{ CARTITEM : contiene
+    PRODUCTO ||--o{ CARTITEM : es_producto
+    USUARIO ||--o{ COMPROBANTE : valida
