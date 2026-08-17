@@ -70,7 +70,6 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 # Application definition
 INSTALLED_APPS = [
     'cloudinary_storage',
-    'django.contrib.staticfiles',
     'cloudinary',
     'jazzmin',
     'gestion_web',
