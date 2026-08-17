@@ -1,8 +1,12 @@
-# ProductoProxy admin intentionally NOT registered to avoid duplicate admin entries.
-# The main Producto model is registered in gestion_web.admin.
-# If a proxy-specific admin is required, consolidate it in gestion_web.admin to prevent duplicates.
 from django.contrib import admin
-from .models import Plato, Categoria
+from django.db import models
+from . import models as platos_models
 
-admin.site.register(Plato)
-admin.site.register(Categoria)
+# Registrar dinámicamente los modelos existentes en platos/models.py
+for attr in dir(platos_models):
+    model = getattr(platos_models, attr)
+    if isinstance(model, type) and issubclass(model, models.Model) and not model._meta.abstract:
+        try:
+            admin.site.register(model)
+        except admin.sites.AlreadyRegistered:
+            pass
