@@ -69,6 +69,9 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Application definition
 INSTALLED_APPS = [
+    'cloudinary_storage',
+    'django.contrib.staticfiles',
+    'cloudinary',
     'jazzmin',
     'gestion_web',
     'usuarios',
@@ -330,3 +333,11 @@ def create_default_superuser(sender, **kwargs):
             print(f"Usuario '{username}' actualizado a SUPERUSUARIO/DUEÑO correctamente.")
         except Exception as e:
             print(f"Error al actualizar superusuario: {e}")
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'hqk1pt35',
+    'API_KEY': '787132539883823',
+    'API_SECRET': 'TU_API_SECRET_COMPLETO_AQUÍ'
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
