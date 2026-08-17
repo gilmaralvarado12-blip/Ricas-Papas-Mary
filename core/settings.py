@@ -297,19 +297,24 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# Crear superusuario automático si no existe en la BD
+# Crear superusuario automático de forma segura
 import os
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 
 @receiver(post_migrate)
 def create_default_superuser(sender, **kwargs):
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    username = os.getenv('ADMIN_USERNAME', 'Lourdes')
-    email = os.getenv('ADMIN_EMAIL', 'lourdes@example.com')
-    password = os.getenv('ADMIN_PASSWORD', 'Lourdes_123*')
-    
-    if not User.objects.filter(username=username).exists():
-        User.objects.create_superuser(username=username, email=email, password=password)
-        print(f"Superusuario '{username}' creado exitosamente.")
+    # Evita ejecutarse en apps secundarias durante la migración
+    if sender.name == 'django.contrib.auth':
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        username = os.getenv('ADMIN_USERNAME', 'admin')
+        email = os.getenv('ADMIN_EMAIL', 'admin@example.com')
+        password = os.getenv('ADMIN_PASSWORD', 'Admin12345*')
+        
+        try:
+            if not User.objects.filter(username=username).exists():
+                User.objects.create_superuser(username=username, email=email, password=password)
+                print(f"Superusuario '{username}' creado exitosamente.")
+        except Exception as e:
+            print(f"No se pudo crear el superusuario automáticamente: {e}")
