@@ -302,9 +302,9 @@ import os
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 
+# settings.py
 @receiver(post_migrate)
 def create_default_superuser(sender, **kwargs):
-    # Evita ejecutarse en apps secundarias durante la migración
     if sender.name == 'django.contrib.auth':
         from django.contrib.auth import get_user_model
         User = get_user_model()
@@ -313,8 +313,18 @@ def create_default_superuser(sender, **kwargs):
         password = os.getenv('ADMIN_PASSWORD', 'Admin12345*')
         
         try:
-            if not User.objects.filter(username=username).exists():
-                User.objects.create_superuser(username=username, email=email, password=password)
-                print(f"Superusuario '{username}' creado exitosamente.")
+            user, created = User.objects.get_or_create(username=username, defaults={'email': email})
+            user.set_password(password)
+            user.is_superuser = True
+            user.is_staff = True
+            
+            # Asignar rol de administración si existe el campo en tu modelo
+            if hasattr(user, 'tipo_usuario'):
+                user.tipo_usuario = 'DUENO' # O 'ADMIN', 'DUEÑO' según tu enum/choices
+            elif hasattr(user, 'rol'):
+                user.rol = 'ADMIN'
+                
+            user.save()
+            print(f"Superusuario '{username}' actualizado correctamente.")
         except Exception as e:
-            print(f"No se pudo crear el superusuario automáticamente: {e}")
+            print(f"Error al configurar superusuario: {e}")
