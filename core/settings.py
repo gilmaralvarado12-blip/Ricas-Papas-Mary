@@ -21,33 +21,52 @@ SECRET_KEY = os.environ.get(
     'RicasPapasMary-2026-SuperSecure-!@#QwErTyUiOpAsDfGhJkLzXcVbNm-7y9v8x5s'
 )
 
-DEBUG = _env_bool('DEBUG', False)
+# Por defecto True en entorno local; en producción (Render) configuras DEBUG=False
+DEBUG = _env_bool('DEBUG', True)
 
-ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
 if DEBUG and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = _env_list(
     'CSRF_TRUSTED_ORIGINS',
-    'https://localhost,https://127.0.0.1,https://*.ngrok-free.app,https://*.ngrok-free.dev'
+    'https://*.onrender.com,https://localhost,https://127.0.0.1,https://*.ngrok-free.app,https://*.ngrok-free.dev'
 )
 
+# ==========================================================
+# CONFIGURACIÓN DE SEGURIDAD Y SSL
+# ==========================================================
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000')) if not DEBUG else 0
-SECURE_HSTS_PRELOAD = not DEBUG
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+
+if not DEBUG:
+    # Ajustes exclusivos de Producción (Render)
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    # Ajustes para Desarrollo Local
+    SECURE_PROXY_SSL_HEADER = None
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_PRELOAD = False
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
 X_FRAME_OPTIONS = 'DENY'
 
+# Configuración de Sesiones
 SESSION_COOKIE_AGE = 60 * 60 * 8
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+
 # Application definition
 INSTALLED_APPS = [
     'jazzmin',
@@ -106,8 +125,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
-# Render and PostgreSQL production environments typically provide DATABASE_URL.
-# SQLite remains the local fallback so commands can still run without environment config.
 if os.environ.get('DATABASE_URL'):
     import dj_database_url
     DATABASES = {
@@ -138,7 +155,6 @@ else:
     }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -155,13 +171,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 LANGUAGE_CODE = 'es'
-
 TIME_ZONE = 'America/Guayaquil'
-
 USE_I18N = True
-
 USE_TZ = True
 
 LANGUAGES = [
@@ -174,7 +186,6 @@ LOCALE_PATHS = [
 ]
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
@@ -187,7 +198,7 @@ STORAGES = {
     },
 }
 
-# Media files (Uploaded images and files)
+# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -201,12 +212,10 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False') == 'True'
 DEFAULT_FROM_EMAIL = 'Ricas Papas Mary <no-reply@ricaspapasmary.com>'
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 AUTH_USER_MODEL = 'gestion_web.Usuario'
 
+# Jazzmin Admin UI
 JAZZMIN_SETTINGS = {
     "custom_css": "gestion_web/css/custom_admin.css",
     "site_title": "Ricas Papas Mary",
@@ -255,14 +264,13 @@ JAZZMIN_SETTINGS = {
     "default_icon_children": "fas fa-circle",
 }
 
-# Configuración de colores (Tema oscuro elegante con detalles en rojo/amarillo para comida rápida)
 JAZZMIN_UI_TWEAKS = {
     "navbar_small_text": False,
     "footer_small_text": False,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": "navbar-danger",  # Color rojo para la marca
-    "accent": "accent-warning",      # Detalles en amarillo
+    "brand_colour": "navbar-danger",
+    "accent": "accent-warning",
     "navbar": "navbar-dark navbar-danger",
     "no_navbar_border": False,
     "navbar_fixed": True,
@@ -279,24 +287,12 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 # ==========================================================
-# RECONFIGURACIÓN DEL FLUJO DE AUTENTICACIÓN (Puntos 2, 3 y 5)
+# FLUJO DE AUTENTICACIÓN Y REDIRECCIONES
 # ==========================================================
-# Si no hay sesión iniciada, manda al login (Punto 2)
 LOGIN_URL = '/ingresar/'
-
-# Tras iniciar sesión con éxito o registrarse, redirige al Home (Punto 3)
 LOGIN_REDIRECT_URL = 'home'
-
-# Al presionar "Cerrar sesión", devuelve al menú inicial público (Punto 5)
 LOGOUT_REDIRECT_URL = 'home'
 
-# Asegura que Django sepa cómo autenticar tu modelo de usuario personalizado
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_HTTPONLY = True
-
-LOGOUT_REDIRECT_URL = '/'

@@ -274,8 +274,56 @@
             padding: 6px 10px;
         }
 
+        @media (max-width: 991.98px) {
+            .site-header .container {
+                padding-top: 0.4rem;
+                padding-bottom: 0.35rem;
+            }
+            .site-header .navbar-brand {
+                margin-bottom: 0 !important;
+            }
+            .site-header .navbar-toggler {
+                margin-left: auto;
+                padding: 0.35rem 0.5rem;
+            }
+            .site-header .navbar-collapse {
+                width: 100%;
+            }
+            .site-header .navbar-nav {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+                gap: 0.4rem;
+                margin-top: 0.5rem;
+            }
+            .site-header .navbar-nav .nav-link {
+                width: 100%;
+                padding: 0.75rem 0.8rem;
+                border-radius: 0.75rem;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                color: #fffdf8;
+                font-weight: 600;
+                font-size: 0.8rem;
+                line-height: 1.2;
+                text-align: left;
+                white-space: normal;
+            }
+            .site-header .header-search {
+                width: 100%;
+                margin-right: 0 !important;
+                margin-bottom: 0.5rem !important;
+            }
+            .header-search input[type="search"] {
+                flex: 1 1 auto;
+                min-width: 0;
+                max-width: none;
+            }
+        }
+
         @media (max-width: 767.98px) {
-            .header-search input[type="search"] { max-width: 160px; }
+            .header-search input[type="search"] { max-width: none; }
             .site-header .brand-text-block h1 { font-size: 1.05rem; }
             .site-header .brand-text-block .brand-subtitle { display:none; }
         }
@@ -286,29 +334,31 @@
 
 <body style="--site-background-url: url('{{ fondo_sitio_url }}');">
 
-    <header class="site-header shadow-sm bg-white">
+    <header class="site-header navbar navbar-expand-lg shadow-sm bg-white">
         <div class="container py-2 d-flex flex-wrap align-items-center justify-content-between">
-            <a class="navbar-brand d-flex align-items-center gap-3 mb-2 mb-lg-0" href="{% url 'home' %}">
-                <span class="brand-logo-shell">
-                    <img src="{{ site_logo_url }}" alt="Ricas Papas Mary" class="logo" style="width: 56px; height: 56px;">
-                </span>
-                <div class="brand-text-block">
-                    <h1>Ricas Papas Mary</h1>
-                    <span class="brand-subtitle">{{ site_logo_subtitle }}</span>
-                </div>
-            </a>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegación">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center justify-content-between w-100 w-lg-auto">
+                <a class="navbar-brand d-flex align-items-center gap-3 mb-0 mb-lg-0" href="{% url 'home' %}">
+                    <span class="brand-logo-shell">
+                        <img src="{{ site_logo_url }}" alt="Ricas Papas Mary" class="logo" style="width: 56px; height: 56px;">
+                    </span>
+                    <div class="brand-text-block">
+                        <h1>Ricas Papas Mary</h1>
+                        <span class="brand-subtitle">{{ site_logo_subtitle }}</span>
+                    </div>
+                </a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegación">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
                 <!-- Buscador en el header (visibilidad global) -->
-                <form method="get" action="{% url 'ver_menu' %}" class="d-flex align-items-center header-search me-3" role="search">
+                <form method="get" action="{% url 'ver_menu' %}" class="d-flex align-items-center header-search me-3 mb-2 mb-lg-0" role="search">
                     <input type="search" name="q" value="{{ request.GET.q|default:'' }}" class="form-control form-control-sm" placeholder="Buscar en el menú..." aria-label="Buscar en el menú">
                     <button class="btn btn-sm ms-2" type="submit" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
                 </form>
 
-                <nav class="d-flex flex-row flex-nowrap align-items-center gap-3">
+                <nav class="navbar-nav flex-column flex-lg-row align-items-start align-items-lg-center gap-2 gap-lg-3 ms-lg-2">
                     <a class="nav-link" href="{% url 'home' %}"><i class="fa-solid fa-house" aria-hidden="true"></i> Inicio</a>
                     <a class="nav-link" href="{% url 'ver_menu' %}?categoria=combos"><i class="fa-solid fa-burger" aria-hidden="true"></i> Combos</a>
                     <a class="nav-link" href="{% url 'home' %}?categoria=papas"><i class="fa-solid fa-square-fragile" aria-hidden="true"></i> Papas Fritas</a>

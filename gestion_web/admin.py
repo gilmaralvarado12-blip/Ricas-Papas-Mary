@@ -139,7 +139,7 @@ class ConfiguracionSitioAdmin(RolAdminMixin, admin.ModelAdmin):
                 'enlace_boton_secundario_hero',
             )
         }),
-        ('Platos recomendados', {
+        ('Texto y visibilidad de platos recomendados', {
             'description': 'Controla visibilidad y textos de la grilla de platos recomendados en la portada.',
             'fields': (
                 'mostrar_seccion_destacados',

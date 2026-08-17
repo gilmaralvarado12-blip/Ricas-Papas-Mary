@@ -343,10 +343,15 @@
         var searchDebounce = null;
         var currentSearchContext = '';
         var currentSearchBias = null;
+        var manualAddressEdit = false;
 
         if (!domicilioFields || !direccionField || !latInput || !lngInput || !mapContainer) {
             return;
         }
+
+        direccionField.addEventListener('input', function () {
+            manualAddressEdit = true;
+        });
 
         function setSearchFeedback(text, type) {
             if (!searchFeedback) {
@@ -491,17 +496,75 @@
             leafletMap.setView(latlng, 15);
         }
 
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return map[char] || char;
+            });
+        }
+
+        function getSuggestionText(prediction, fallback) {
+            if (!prediction || typeof prediction !== 'object') {
+                return fallback || '';
+            }
+
+            if (typeof prediction.display_name === 'string' && prediction.display_name.trim()) {
+                return prediction.display_name.trim();
+            }
+            if (typeof prediction.formatted_address === 'string' && prediction.formatted_address.trim()) {
+                return prediction.formatted_address.trim();
+            }
+            if (typeof prediction.description === 'string' && prediction.description.trim()) {
+                return prediction.description.trim();
+            }
+            if (prediction.structured_formatting && typeof prediction.structured_formatting.main_text === 'string' && prediction.structured_formatting.main_text.trim()) {
+                return prediction.structured_formatting.main_text.trim();
+            }
+            if (prediction.address) {
+                var road = prediction.address.road || prediction.address.street || prediction.address.pedestrian || prediction.address.path || prediction.address.house_number;
+                if (road) {
+                    return road;
+                }
+            }
+            if (prediction.name) {
+                return prediction.name;
+            }
+
+            return fallback || '';
+        }
+
+        function updateAddressFields(displayValue, forceOverride) {
+            if (!displayValue) {
+                return;
+            }
+
+            if (manualAddressEdit && !forceOverride) {
+                return;
+            }
+
+            if (searchInput) {
+                searchInput.value = displayValue;
+            }
+        }
+
         function reverseGeocodeLeaflet(lat, lng) {
+            if (manualAddressEdit) {
+                return;
+            }
+
             fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&accept-language=es&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng), {
                 headers: { 'Accept': 'application/json' }
             })
                 .then(function (response) { return response.ok ? response.json() : null; })
                 .then(function (result) {
                     if (result && result.display_name) {
-                        direccionField.value = result.display_name;
-                        if (searchInput) {
-                            searchInput.value = result.display_name;
-                        }
+                        updateAddressFields(result.display_name, false);
                         currentSearchContext = '';
                     }
                 })
@@ -596,16 +659,6 @@
             return values.join(' ').trim();
         }
 
-        function updateAddressFields(displayValue) {
-            if (!displayValue) {
-                return;
-            }
-            direccionField.value = displayValue;
-            if (searchInput) {
-                searchInput.value = displayValue;
-            }
-        }
-
         function setMarkerLocation(lat, lng, zoom) {
             if (!map || !window.google || !window.google.maps) {
                 return;
@@ -686,14 +739,21 @@
             }
 
             suggestionResults.forEach(function (prediction) {
+                var title = getSuggestionText(prediction, 'Ubicación');
+                var subtitle = '';
+                if (prediction && prediction.structured_formatting && prediction.structured_formatting.secondary_text) {
+                    subtitle = prediction.structured_formatting.secondary_text;
+                } else if (prediction && prediction.address) {
+                    subtitle = prediction.address.city || prediction.address.town || prediction.address.state || prediction.address.country || prediction.display_name || prediction.name || '';
+                } else if (prediction && prediction.display_name && prediction.display_name !== title) {
+                    subtitle = prediction.display_name;
+                }
+
                 var button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'search-suggestion-item';
-                button.innerHTML = '<span class="search-suggestion-title">' +
-                    (prediction.structured_formatting && prediction.structured_formatting.main_text ? prediction.structured_formatting.main_text : prediction.description) +
-                    '</span><span class="search-suggestion-subtitle">' +
-                    (prediction.structured_formatting && prediction.structured_formatting.secondary_text ? prediction.structured_formatting.secondary_text : prediction.description) +
-                    '</span>';
+                button.innerHTML = '<span class="search-suggestion-title">' + escapeHtml(title || 'Ubicación') + '</span>' +
+                    (subtitle ? '<span class="search-suggestion-subtitle">' + escapeHtml(subtitle) + '</span>' : '');
                 button.addEventListener('click', function () {
                     selectSuggestion(prediction);
                 });
@@ -770,6 +830,9 @@
                 return;
             }
 
+            var selectedText = getSuggestionText(prediction, 'Ubicación');
+            manualAddressEdit = false;
+
             if (!geocoder) {
                 var latitude = parseFloat(prediction.lat);
                 var longitude = parseFloat(prediction.lon);
@@ -779,6 +842,7 @@
                 }
 
                 setLeafletMarker({ lat: latitude, lng: longitude });
+                updateAddressFields(selectedText, true);
                 reverseGeocodeLeaflet(latitude, longitude);
                 currentSearchContext = '';
                 setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
@@ -805,7 +869,7 @@
                     map.fitBounds(place.geometry.viewport);
                 }
 
-                updateAddressFields(place.formatted_address || prediction.description);
+                updateAddressFields(place.formatted_address || selectedText, true);
                 currentSearchContext = buildSearchContext(place.address_components || []);
                 setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
                 hideSuggestions();
@@ -835,6 +899,7 @@
                         }
 
                         setLeafletMarker({ lat: latitude, lng: longitude });
+                        updateAddressFields(getSuggestionText(result, query), true);
                         reverseGeocodeLeaflet(latitude, longitude);
                         setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
                         hideSuggestions();
@@ -865,7 +930,7 @@
                 if (place.geometry.viewport && map) {
                     map.fitBounds(place.geometry.viewport);
                 }
-                updateAddressFields(place.formatted_address || query);
+                updateAddressFields(place.formatted_address || query, true);
                 currentSearchContext = buildSearchContext(place.address_components || []);
                 setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
                 hideSuggestions();

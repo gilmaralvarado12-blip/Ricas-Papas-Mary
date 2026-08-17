@@ -1472,26 +1472,21 @@
         </div>
 
         <div class="commerce-categories">
-            <div class="container-fluid px-3 py-1 d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                <div class="d-flex align-items-center gap-1 flex-wrap">
-                    <a href="{% url 'home' %}" class="commerce-category-link {% if not active_category %}active{% endif %}">
-                        <i class="fa-solid fa-house" aria-hidden="true"></i> Inicio
-                    </a>
+            <div class="container-fluid px-3 py-1 d-flex flex-row flex-nowrap align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'home' %}" class="commerce-category-link {% if not active_category %}active{% endif %}"><i class="fa-solid fa-house" aria-hidden="true"></i> Inicio</a>
                     <a href="{% url 'home' %}?categoria=combos" class="commerce-category-link {% if active_category == 'combos' %}active{% endif %}">Combos</a>
                     <a href="{% url 'home' %}?categoria=papas" class="commerce-category-link {% if active_category == 'papas' %}active{% endif %}">Papas Fritas</a>
                     <a href="{% url 'home' %}?categoria=bebidas" class="commerce-category-link {% if active_category == 'bebidas' %}active{% endif %}">Bebidas</a>
                     <a href="{% url 'ver_menu' %}?modulo=reservas" class="commerce-category-link">Reservas</a>
                     <a href="{% url 'ver_menu' %}?modulo=pedidos" class="commerce-category-link">Pedidos</a>
                     {% if user.is_authenticated %}
-                    <span class="user-welcome" style="display:inline-flex; align-items:center; gap:0.45rem; color:#ffe29a; font-weight:800; white-space:nowrap;">
-                        <i class="fa-solid fa-user" aria-hidden="true"></i> {{ user.username }}
-                    </span>
-                    <form method="post" action="{% url 'logout' %}" class="m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="commerce-category-link commerce-logout-link border-0" aria-label="Cerrar sesión">
-                            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Cerrar sesión
-                        </button>
-                    </form>
+                        <a href="{% url 'usuarios:mi_perfil' %}" class="commerce-category-link d-flex align-items-center" style="white-space:nowrap;"><i class="fa-solid fa-user me-1" aria-hidden="true"></i> {{ user.username }}</a>
+                        {% if user.rol == 'REPARTIDOR' or user.rol == 'EMPLEADO' or user.rol == 'ADMIN' %}
+                            <a class="commerce-category-link" href="{% url 'entregas:lista_entregas' %}"><i class="fa-solid fa-motorcycle" aria-hidden="true"></i> Entregas</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}" class="commerce-category-link">Iniciar sesión</a>
                     {% endif %}
                 </div>
             </div>

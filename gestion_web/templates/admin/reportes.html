@@ -21,6 +21,21 @@
     .report-section table { width:100%; border-collapse:collapse; }
     .report-section th, .report-section td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
     .report-empty { color:#777; }
+    .report-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 260px;
+        min-height: 260px;
+        border: 1px solid #f0e9e2;
+        border-radius: 8px;
+        background: #fffdf9;
+        padding: 10px;
+    }
+    .report-chart-wrap canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+    }
 </style>
 {% endblock %}
 
@@ -107,11 +122,15 @@
     <div style="display:flex; gap:18px; flex-wrap:wrap;">
         <div style="flex:1 1 420px; min-width:320px;">
             <h3>Entregas por día</h3>
-            <canvas id="chartEntregasDia" height="140"></canvas>
+            <div class="report-chart-wrap">
+                <canvas id="chartEntregasDia"></canvas>
+            </div>
         </div>
         <div style="flex:1 1 420px; min-width:320px;">
             <h3>Reservas por día</h3>
-            <canvas id="chartReservasDia" height="140"></canvas>
+            <div class="report-chart-wrap">
+                <canvas id="chartReservasDia"></canvas>
+            </div>
         </div>
     </div>
 
@@ -171,9 +190,23 @@
                 type: 'bar',
                 data: {
                     labels: eSeries.labels,
-                    datasets: [{ label: 'Entregas', data: eSeries.values, backgroundColor: '#b21e29' }]
+                    datasets: [{ label: 'Entregas', data: eSeries.values, backgroundColor: '#b21e29', borderRadius: 6 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 400 },
+                    interaction: { intersect: false },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
             });
 
             var ctxR = document.getElementById('chartReservasDia');
@@ -181,9 +214,23 @@
                 type: 'bar',
                 data: {
                     labels: rSeries.labels,
-                    datasets: [{ label: 'Reservas', data: rSeries.values, backgroundColor: '#ffb703' }]
+                    datasets: [{ label: 'Reservas', data: rSeries.values, backgroundColor: '#ffb703', borderRadius: 6 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 400 },
+                    interaction: { intersect: false },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
             });
         } catch (err) {
             console.warn('Error al renderizar gráficos de reportes:', err);

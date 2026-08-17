@@ -35,8 +35,12 @@ def site_background(request):
     fondo_sitio_url = static('images/papas_mary.jpg')
 
     configuracion = ConfiguracionSitio.objects.first()
-    if configuracion and configuracion.fondo:
-        fondo_sitio_url = configuracion.fondo.url
+    if configuracion and configuracion.fondo and configuracion.fondo.name:
+        try:
+            if configuracion.fondo.storage.exists(configuracion.fondo.name):
+                fondo_sitio_url = configuracion.fondo.url
+        except Exception:
+            pass
 
     return {'fondo_sitio_url': fondo_sitio_url}
 
