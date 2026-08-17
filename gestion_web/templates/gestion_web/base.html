@@ -308,27 +308,23 @@
                     <button class="btn btn-sm ms-2" type="submit" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
                 </form>
 
-                <nav class="d-flex flex-column flex-lg-row align-items-center gap-2">
+                <nav class="d-flex flex-row flex-nowrap align-items-center gap-3">
                     <a class="nav-link" href="{% url 'home' %}"><i class="fa-solid fa-house" aria-hidden="true"></i> Inicio</a>
-                    <a class="nav-link menu-highlight" href="{% url 'ver_menu' %}"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Menú</a>
-                    <a class="nav-link" href="{% url 'reservas:mis_reservas' %}"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Mis Reservas</a>
-                    <a class="nav-link" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Carrito - $<span id="cart-total">{{ cart_total|floatformat:2 }}</span></a>
+                    <a class="nav-link" href="{% url 'ver_menu' %}?categoria=combos"><i class="fa-solid fa-burger" aria-hidden="true"></i> Combos</a>
+                    <a class="nav-link" href="{% url 'home' %}?categoria=papas"><i class="fa-solid fa-square-fragile" aria-hidden="true"></i> Papas Fritas</a>
+                    <a class="nav-link" href="{% url 'home' %}?categoria=bebidas"><i class="fa-solid fa-mug-saucer" aria-hidden="true"></i> Bebidas</a>
+                    <a class="nav-link" href="{% url 'reservas:mis_reservas' %}"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Reservas</a>
+                    <a class="nav-link" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-shopping-basket" aria-hidden="true"></i> Pedidos</a>
                     {% if user.is_authenticated %}
-                    <span class="user-welcome"><i class="fa-solid fa-user" aria-hidden="true"></i> Hola, {{ user.username }}</span>
-                    {% if user.rol == 'REPARTIDOR' or user.rol == 'EMPLEADO' or user.rol == 'ADMIN' %}
-                    <a class="nav-link" href="{% url 'entregas:lista_entregas' %}"><i class="fa-solid fa-motorcycle" aria-hidden="true"></i> Entregas</a>
-                    {% endif %}
-                    <form method="post" action="{% url 'logout' %}" class="m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="nav-link border-0 bg-transparent p-0">
-                            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Salir
-                        </button>
-                    </form>
+                        <a class="nav-link d-flex align-items-center gap-1" href="{% url 'usuarios:mi_perfil' %}"><i class="fa-solid fa-user" aria-hidden="true"></i> {{ user.username }}</a>
+                        {% if user.rol == 'REPARTIDOR' or user.rol == 'EMPLEADO' or user.rol == 'ADMIN' %}
+                            <a class="nav-link" href="{% url 'entregas:lista_entregas' %}"><i class="fa-solid fa-motorcycle" aria-hidden="true"></i> Entregas</a>
+                        {% endif %}
                     {% else %}
-                    <a class="nav-link" href="{% url 'login' %}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Iniciar sesión</a>
+                        <a class="nav-link" href="{% url 'login' %}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Iniciar sesión</a>
                     {% endif %}
                     {% if user.is_authenticated and user.is_staff %}
-                    <a class="nav-link" href="/admin"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Panel Interno</a>
+                        <a class="nav-link" href="/admin"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Panel Interno</a>
                     {% endif %}
                 </nav>
             </div>
@@ -376,12 +372,24 @@
         </div>
         {% endif %}
         {% if messages %}
+        <script id="rpmMessagesData" type="application/json">
+        [
+        {% for message in messages %}
+            {"level": "{{ message.tags|default:'info' }}", "text": "{{ message|escapejs }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ]
+        </script>
         <script>
-            var rpmMessages = [
-                {% for message in messages %}
-                    { level: "{{ message.tags|default:'info' }}", text: "{{ message|escapejs }}" }{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ];
+            var rpmMessages = [];
+            try {
+                var rpmDataEl = document.getElementById('rpmMessagesData');
+                if (rpmDataEl && rpmDataEl.textContent) {
+                    rpmMessages = JSON.parse(rpmDataEl.textContent);
+                }
+            } catch (e) {
+                console.warn('Failed to parse rpmMessagesData JSON', e);
+                rpmMessages = [];
+            }
         </script>
 
         <!-- Central modal for system messages -->
@@ -742,42 +750,53 @@
                 messagesContainer.appendChild(typing);
                 typing.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-                // Send to server-side chatbot endpoint
-                fetch('{% url "chatbot_response" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ message: message })
-                }).then(function (resp) {
-                    if (!resp.ok) throw new Error('Network response was not ok');
-                    return resp.json();
-                }).then(function (data) {
-                    // remove typing indicator
-                    typing.remove();
+                // Send to server-side chatbot endpoint (safe: use chatbot_endpoint context variable or show fallback)
+                var CHATBOT_ENDPOINT = "{{ chatbot_endpoint|default:'' }}";
+                if (CHATBOT_ENDPOINT) {
+                    fetch(CHATBOT_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ message: message })
+                    }).then(function (resp) {
+                        if (!resp.ok) throw new Error('Network response was not ok');
+                        return resp.json();
+                    }).then(function (data) {
+                        // remove typing indicator
+                        typing.remove();
 
-                    var botText = data && (data.response || data.reply || data.error) ? (data.response || data.reply || data.error) : 'Disculpa, hubo un problema procesando tu mensaje.';
-                    var botMessage = document.createElement('div');
-                    botMessage.className = 'rpm-chat-message bot mt-2';
-                    if (data && data.response_html) {
-                        // response_html viene pre-sanitizado por el servidor — lo insertamos como HTML
-                        botMessage.innerHTML = data.response_html;
-                    } else {
-                        botMessage.textContent = botText;
-                    }
-                    messagesContainer.appendChild(botMessage);
-                    botMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }).catch(function (err) {
+                        var botText = data && (data.response || data.reply || data.error) ? (data.response || data.reply || data.error) : 'Disculpa, hubo un problema procesando tu mensaje.';
+                        var botMessage = document.createElement('div');
+                        botMessage.className = 'rpm-chat-message bot mt-2';
+                        if (data && data.response_html) {
+                            // response_html viene pre-sanitizado por el servidor — lo insertamos como HTML
+                            botMessage.innerHTML = data.response_html;
+                        } else {
+                            botMessage.textContent = botText;
+                        }
+                        messagesContainer.appendChild(botMessage);
+                        botMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }).catch(function (err) {
+                        typing.remove();
+                        var botMessage = document.createElement('div');
+                        botMessage.className = 'rpm-chat-message bot mt-2';
+                        botMessage.textContent = 'Error de conexión. Intenta nuevamente.';
+                        messagesContainer.appendChild(botMessage);
+                        botMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        console.error('Chatbot fetch error:', err);
+                    });
+                } else {
+                    // No chatbot endpoint configured — show friendly fallback
                     typing.remove();
                     var botMessage = document.createElement('div');
                     botMessage.className = 'rpm-chat-message bot mt-2';
-                    botMessage.textContent = 'Error de conexión. Intenta nuevamente.';
+                    botMessage.textContent = 'El servicio de chat no está disponible.';
                     messagesContainer.appendChild(botMessage);
                     botMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    console.error('Chatbot fetch error:', err);
-                });
+                }
             });
         });
     </script>

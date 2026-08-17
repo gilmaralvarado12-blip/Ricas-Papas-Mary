@@ -1,13 +1,88 @@
 {% extends 'gestion_web/base.html' %}
 {% block content %}
-<div class="tarjeta" data-animate-module style="max-width: 760px; margin: 0 auto;">
-    <h2>Mi perfil</h2>
-    <p style="color:#666; margin-bottom:14px;">Actualiza tus datos personales.</p>
+<style>
+/* Perfil: estilos locales para diseño profesional sin afectar global */
+.profile-card {
+  max-width: 840px;
+  margin: 22px auto 60px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  padding: 26px;
+  backdrop-filter: blur(4px);
+}
+.profile-header {
+  display:flex;
+  align-items:center;
+  gap:18px;
+  margin-bottom:18px;
+}
+.profile-avatar {
+  width:84px; height:84px; border-radius:50%; overflow:hidden; flex:0 0 84px; border:3px solid #ffdca8; background:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:32px; color:#b21e29;
+}
+.profile-title h2 { margin:0; font-weight:700; font-size:1.6rem; }
+.profile-sub { color:#6c6c6c; margin-top:6px; }
+.profile-actions { margin-left:auto; display:flex; gap:8px; }
+.profile-section { margin-top:14px; }
+.info-card { border-radius:10px; border:1px solid #efe6db; background:#fffdf8; padding:14px; display:flex; align-items:center; justify-content:space-between; text-decoration:none; color:inherit; }
+.profile-form { margin-top:14px; }
+.profile-form p { margin-bottom:12px; }
+.profile-form label { font-weight:600; color:#333; display:block; margin-bottom:6px; }
+.profile-form input[type=text], .profile-form input[type=email], .profile-form input[type=tel], .profile-form input, .profile-form textarea, .profile-form select { width:100%; padding:10px 12px; border:1px solid #e6dcca; border-radius:8px; background:#fff; }
+.form-actions { display:flex; gap:12px; align-items:center; margin-top:18px; }
+.btn-primary.rpm { background:linear-gradient(135deg,#b21e29 0%,#d43b3b 100%); border:0; padding:10px 18px; border-radius:8px; box-shadow:0 6px 18px rgba(178,30,41,0.18); }
+.btn-secondary.rpm { border-radius:8px; padding:8px 14px; }
+.logout-note { font-size:0.9rem; color:#777; margin-top:10px; }
+@media (max-width:767px) {
+  .profile-header { gap:12px }
+  .profile-avatar { width:64px; height:64px }
+}
+</style>
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar cambios</button>
+<div class="profile-card" data-animate-module>
+  <div class="profile-header">
+    <div class="profile-avatar" aria-hidden="true">
+      <i class="fa-solid fa-user"></i>
+    </div>
+    <div class="profile-title">
+      <h2>Mi perfil</h2>
+      <div class="profile-sub">Actualiza tus datos personales.</div>
+    </div>
+
+    <div class="profile-actions">
+      <a href="#" class="btn btn-sm btn-secondary rpm" onclick="event.preventDefault(); history.back();" title="Volver"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+      <a href="{% url 'home' %}" class="btn btn-sm btn-secondary rpm" title="Inicio"><i class="fa-solid fa-house"></i> Inicio</a>
+    </div>
+  </div>
+
+  <a href="{% url 'usuarios:mi_perfil' %}" class="info-card" title="Información personal">
+    <div>
+      <strong><i class="fa-solid fa-id-card me-2"></i> Información personal</strong>
+      <div style="color:#6c6c6c; font-size:0.95rem;">Editar nombre, correo y otra información personal.</div>
+    </div>
+    <div class="text-muted"><i class="fa-solid fa-chevron-right"></i></div>
+  </a>
+
+  <div class="profile-section">
+    <form method="post" class="profile-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="form-actions">
+        <button class="btn btn-primary rpm" type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar cambios</button>
+        <a class="btn btn-outline-secondary rpm" href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Volver al inicio</a>
+      </div>
     </form>
+
+    <div class="mt-4 text-center">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" style="border-radius:8px; padding:8px 14px;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+      </form>
+      <div class="logout-note">Al cerrar sesión se cerrará tu acceso a la administración y al sistema.</div>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
