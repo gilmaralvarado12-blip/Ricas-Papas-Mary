@@ -336,8 +336,8 @@ def create_default_superuser(sender, **kwargs):
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'hqk1pt35',
-    'API_KEY': '787132539883823',
-    'API_SECRET': 'TU_API_SECRET_COMPLETO_AQUÍ'
+    'API_KEY': '78713253988cl3823',
+    'API_SECRET': 'ZfAWFWqR7ufprfM_WfF0kNWouGA'
 }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
