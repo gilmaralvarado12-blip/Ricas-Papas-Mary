@@ -303,6 +303,7 @@ from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 
 # settings.py
+# settings.py
 @receiver(post_migrate)
 def create_default_superuser(sender, **kwargs):
     if sender.name == 'django.contrib.auth':
@@ -313,18 +314,19 @@ def create_default_superuser(sender, **kwargs):
         password = os.getenv('ADMIN_PASSWORD', 'Admin12345*')
         
         try:
-            user, created = User.objects.get_or_create(username=username, defaults={'email': email})
+            # Buscar el usuario o crearlo si no existe
+            user, _ = User.objects.get_or_create(username=username, defaults={'email': email})
             user.set_password(password)
             user.is_superuser = True
             user.is_staff = True
             
-            # Asignar rol de administración si existe el campo en tu modelo
-            if hasattr(user, 'tipo_usuario'):
-                user.tipo_usuario = 'DUENO' # O 'ADMIN', 'DUEÑO' según tu enum/choices
-            elif hasattr(user, 'rol'):
-                user.rol = 'ADMIN'
-                
+            # Cambiar el tipo de usuario/rol según los campos de tu modelo CustomUser
+            for field in ['tipo_usuario', 'rol', 'tipo', 'role']:
+                if hasattr(user, field):
+                    # Asigna 'ADMIN', 'DUEÑO', 'DUENO' o 'ADMINISTRADOR'
+                    setattr(user, field, 'DUENO') 
+                    
             user.save()
-            print(f"Superusuario '{username}' actualizado correctamente.")
+            print(f"Usuario '{username}' actualizado a SUPERUSUARIO/DUEÑO correctamente.")
         except Exception as e:
-            print(f"Error al configurar superusuario: {e}")
+            print(f"Error al actualizar superusuario: {e}")
