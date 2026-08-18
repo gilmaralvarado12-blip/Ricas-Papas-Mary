@@ -1,0 +1,555 @@
+{% extends 'gestion_web/home.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .auth-page {
+       position: relative;
+       min-height: calc(100vh - 72px);
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       padding: 32px 16px;
+       z-index: 2;
+    }
+
+    .auth-page::before {
+       content: "";
+       position: absolute;
+       inset: 0;
+       background: rgba(18, 8, 8, 0.28);
+       z-index: 0;
+    }
+
+    .auth-card {
+       position: relative;
+       z-index: 1;
+       width: min(100%, 980px);
+       display: grid;
+       grid-template-columns: 1.05fr 1fr;
+       background: #FFF9EF;
+       border-radius: 24px;
+       overflow: hidden;
+       box-shadow: 0 26px 60px rgba(35, 16, 12, 0.28);
+       border: 1px solid rgba(169, 21, 29, 0.12);
+       animation: authCardIn 0.35s ease-out;
+    }
+
+    .auth-panel {
+       padding: 42px 34px 36px;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+       background: linear-gradient(135deg, #A9151D 0%, #7F0E14 100%);
+       color: #fff;
+    }
+
+    .auth-brand {
+       display: inline-flex;
+       align-items: center;
+       gap: 12px;
+       font-size: 1.05rem;
+       font-weight: 800;
+       color: #FFF9EF;
+       margin-bottom: 16px;
+    }
+
+    .auth-brand img {
+       width: 68px;
+       height: 68px;
+       object-fit: cover;
+       border-radius: 50%;
+       border: 2px solid rgba(255, 255, 255, 0.8);
+       background: #fff;
+       box-shadow: 0 14px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .auth-panel h1 {
+       margin: 0 0 12px;
+       font-size: clamp(2rem, 2.6vw, 2.8rem);
+       line-height: 1.15;
+       letter-spacing: -0.03em;
+       color: #fff;
+       font-weight: 800;
+    }
+
+    .auth-panel p {
+       margin: 0;
+       font-size: 1rem;
+       line-height: 1.6;
+       color: rgba(255, 255, 255, 0.9);
+    }
+
+    .auth-benefits {
+       list-style: none;
+       padding: 0;
+       margin: 22px 0 0;
+       display: grid;
+       gap: 16px;
+    }
+
+    .auth-benefit {
+       display: flex;
+       gap: 14px;
+       align-items: flex-start;
+    }
+
+    .auth-benefit-icon {
+       width: 42px;
+       height: 42px;
+       flex-shrink: 0;
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       border-radius: 50%;
+       background: rgba(255, 180, 0, 0.16);
+       border: 1px solid rgba(255, 180, 0, 0.7);
+       color: #FFB400;
+       font-size: 1rem;
+    }
+
+    .auth-benefit-copy {
+       display: flex;
+       flex-direction: column;
+       gap: 4px;
+    }
+
+    .auth-benefit-copy strong {
+       color: #fff;
+       font-size: 1.02rem;
+       font-weight: 700;
+    }
+
+    .auth-benefit-copy span {
+       color: rgba(255, 255, 255, 0.78);
+       font-size: 0.91rem;
+       line-height: 1.55;
+    }
+
+    .auth-thanks {
+       margin-top: 24px;
+       font-size: 1.02rem;
+       font-weight: 700;
+       color: #FFB400;
+    }
+
+    .auth-form-panel {
+       padding: 38px 34px 30px;
+       background: #FFF9EF;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+    }
+
+    .auth-form-header {
+       text-align: center;
+       margin-bottom: 20px;
+    }
+
+    .auth-user-badge {
+       width: 52px;
+       height: 52px;
+       margin: 0 auto 12px;
+       border-radius: 50%;
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       background: linear-gradient(135deg, #FFB400, #FF7A00);
+       color: #fff;
+       box-shadow: 0 12px 22px rgba(255, 122, 0, 0.24);
+       font-size: 1.2rem;
+    }
+
+    .auth-form-header h2 {
+       margin: 0;
+       font-size: clamp(1.8rem, 2vw, 2.3rem);
+       line-height: 1.2;
+       color: #2B2525;
+       font-weight: 800;
+    }
+
+    .auth-form-header p {
+       margin: 8px 0 0;
+       color: #6F6F6F;
+       font-size: 0.96rem;
+    }
+
+    .auth-divider {
+       display: block;
+       width: 90px;
+       height: 3px;
+       border-radius: 999px;
+       margin: 18px auto 0;
+       background: linear-gradient(90deg, #FFB400, #FF7A00);
+    }
+
+    .auth-form {
+       display: flex;
+       flex-direction: column;
+       gap: 18px;
+    }
+
+    .auth-field {
+       display: flex;
+       flex-direction: column;
+       gap: 8px;
+    }
+
+    .auth-field label {
+       color: #2B2525;
+       font-size: 0.97rem;
+       font-weight: 600;
+       margin: 0;
+    }
+
+    .auth-form input:not([type=checkbox]) {
+       width: 100%;
+       height: 50px;
+       border-radius: 10px;
+       border: 1px solid #DDD5C9;
+       background: #FFFFFF;
+       padding: 0 16px;
+       color: #2B2525;
+       font-size: 0.98rem;
+       transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .auth-form input:not([type=checkbox]):focus {
+       border-color: #FFB400;
+       box-shadow: 0 0 0 3px rgba(255, 180, 0, 0.15);
+       outline: none;
+    }
+
+    .auth-password-field {
+       position: relative;
+    }
+
+    .auth-password-field input {
+       padding-right: 52px !important;
+    }
+
+    .password-toggle-btn {
+       position: absolute;
+       top: 50%;
+       right: 10px;
+       transform: translateY(-50%);
+       width: 34px;
+       height: 34px;
+       border: none;
+       background: transparent;
+       color: #6F6F6F;
+       border-radius: 8px;
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       cursor: pointer;
+       transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .password-toggle-btn:hover,
+    .password-toggle-btn:focus-visible {
+       background: rgba(255, 180, 0, 0.08);
+       color: #A9151D;
+       outline: none;
+    }
+
+    .password-toggle-btn:active {
+       transform: translateY(-50%) scale(0.96);
+    }
+
+    .auth-submit {
+       width: 100%;
+       height: 52px;
+       border: none;
+       border-radius: 10px;
+       background: linear-gradient(90deg, #FFB400, #FF7A00);
+       color: #2B2525;
+       font-weight: 800;
+       font-size: 1rem;
+       letter-spacing: 0.01em;
+       box-shadow: 0 12px 20px rgba(255, 122, 0, 0.22);
+       transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .auth-submit:hover {
+       transform: translateY(-2px);
+       box-shadow: 0 16px 24px rgba(255, 122, 0, 0.26);
+       filter: brightness(1.02);
+    }
+
+    .auth-switch {
+       margin-top: 18px;
+       text-align: center;
+       font-size: 0.98rem;
+       color: #2B2525;
+    }
+
+    .auth-switch a {
+       color: #A9151D;
+       font-weight: 700;
+       text-decoration: none;
+    }
+
+    .auth-switch a:hover {
+       text-decoration: underline;
+    }
+
+    .auth-alert {
+       padding: 12px 14px;
+       border-radius: 10px;
+       background: rgba(180, 35, 24, 0.08);
+       border: 1px solid rgba(180, 35, 24, 0.18);
+       color: #B42318;
+       font-size: 0.85rem;
+       line-height: 1.5;
+    }
+
+    .field-error {
+       color: #B42318;
+       font-size: 0.82rem;
+       margin-top: 5px;
+    }
+
+    .auth-form .form-check {
+       display: flex;
+       align-items: flex-start;
+       gap: 10px;
+       margin: 0;
+    }
+
+    .auth-form .form-check input[type="checkbox"] {
+       margin-top: 2px;
+       accent-color: #FFB400;
+       width: 17px;
+       height: 17px;
+    }
+
+    .auth-form .form-check-label,
+    .auth-form .form-check-label a {
+       color: #2B2525;
+       font-size: 0.92rem;
+       line-height: 1.5;
+    }
+
+    .auth-form .form-check-label a {
+       color: #A9151D;
+       font-weight: 700;
+    }
+
+    .auth-form input.is-invalid,
+    .auth-form input.invalid {
+       border-color: #D92D20 !important;
+    }
+
+    @keyframes authCardIn {
+       from {
+           opacity: 0;
+           transform: translateY(15px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0);
+       }
+    }
+
+    @media (max-width: 920px) {
+       .auth-card {
+           grid-template-columns: 1fr;
+           max-width: 540px;
+       }
+
+       .auth-panel {
+           padding: 30px 22px 24px;
+       }
+
+       .auth-form-panel {
+           padding: 24px 22px 22px;
+       }
+    }
+
+    @media (max-width: 600px) {
+       .auth-page {
+           padding: 24px 12px;
+       }
+
+       .auth-brand {
+           font-size: 0.95rem;
+       }
+
+       .auth-brand img {
+           width: 54px;
+           height: 54px;
+       }
+
+       .auth-panel h1 {
+           font-size: 2rem;
+       }
+
+       .auth-benefit {
+           gap: 10px;
+       }
+
+       .auth-submit {
+           height: 50px;
+       }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+       .auth-card,
+       .auth-submit,
+       .password-toggle-btn {
+           animation: none !important;
+           transition: none !important;
+       }
+    }
+</style>
+
+<section class="auth-page">
+    <div class="auth-card">
+       <a href="{% url 'home' %}" class="auth-close-btn" aria-label="Regresar al inicio" style="position:absolute; top:18px; right:18px; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.8); color:#fff; text-decoration:none; z-index:5;">
+           <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+       </a>
+
+       <aside class="auth-panel">
+           <div class="auth-brand">
+               <img src="{% static 'images/logo.png' %}" alt="Logo de Ricas Papas Mary">
+               <span>Ricas Papas Mary</span>
+           </div>
+
+           <h1>Únete a<br>RICAS PAPAS MARY</h1>
+           <p>Crea tu cuenta y disfruta de una experiencia más rápida, fácil y deliciosa.</p>
+
+           <ul class="auth-benefits">
+               <li class="auth-benefit">
+                   <span class="auth-benefit-icon"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+                   <div class="auth-benefit-copy">
+                       <strong>Guarda tus pedidos favoritos</strong>
+                       <span>Encuentra y repite tus antojitos en segundos.</span>
+                   </div>
+               </li>
+               <li class="auth-benefit">
+                   <span class="auth-benefit-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+                   <div class="auth-benefit-copy">
+                       <strong>Reserva tu mesa más rápido</strong>
+                       <span>Asegura tu lugar sin complicaciones.</span>
+                   </div>
+               </li>
+               <li class="auth-benefit">
+                   <span class="auth-benefit-icon"><i class="fa-solid fa-percent" aria-hidden="true"></i></span>
+                   <div class="auth-benefit-copy">
+                       <strong>Disfruta promociones y novedades</strong>
+                       <span>Sé el primero en enterarte de todo.</span>
+                   </div>
+               </li>
+           </ul>
+
+           <div class="auth-thanks">¡Gracias por elegirnos! ♡</div>
+       </aside>
+
+       <div class="auth-form-panel">
+           <div class="auth-form-header">
+               <div class="auth-user-badge"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
+               <h2>Crear cuenta</h2>
+               <p>Regístrate para disfrutar una experiencia más rápida y personalizada.</p>
+               <span class="auth-divider" aria-hidden="true"></span>
+           </div>
+
+           <form class="auth-form" method="post" action="">
+               {% csrf_token %}
+
+               {% if form.non_field_errors %}
+               <div class="auth-alert" role="alert">
+                   {% for error in form.non_field_errors %}
+                   <div>{{ error }}</div>
+                   {% endfor %}
+               </div>
+               {% endif %}
+
+               <div class="auth-field">
+                   <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+                   {{ form.username }}
+                   {% for error in form.username.errors %}
+                   <div class="field-error">{{ error }}</div>
+                   {% endfor %}
+               </div>
+
+               <div class="auth-field">
+                   <label for="{{ form.password1.id_for_label }}">Contraseña</label>
+                   <div class="auth-password-field">
+                       {{ form.password1 }}
+                       <button type="button" class="password-toggle-btn" data-target="{{ form.password1.id_for_label }}" aria-label="Mostrar contraseña">
+                           <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                       </button>
+                   </div>
+                   {% for error in form.password1.errors %}
+                   <div class="field-error">{{ error }}</div>
+                   {% endfor %}
+               </div>
+
+               <div class="auth-field">
+                   <label for="{{ form.password2.id_for_label }}">Confirmación de contraseña</label>
+                   <div class="auth-password-field">
+                       {{ form.password2 }}
+                       <button type="button" class="password-toggle-btn" data-target="{{ form.password2.id_for_label }}" aria-label="Mostrar contraseña">
+                           <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                       </button>
+                   </div>
+                   {% for error in form.password2.errors %}
+                   <div class="field-error">{{ error }}</div>
+                   {% endfor %}
+               </div>
+
+               <div class="auth-field">
+                   <div class="form-check">
+                       {{ form.acepta_politica_datos }}
+                       <label class="form-check-label" for="{{ form.acepta_politica_datos.id_for_label }}">
+                           He leído y acepto la
+                           <a href="{% url 'politica_privacidad' %}" target="_blank" rel="noopener">Política de Protección de Datos</a>.
+                       </label>
+                   </div>
+                   {% for error in form.acepta_politica_datos.errors %}
+                   <div class="field-error">{{ error }}</div>
+                   {% endfor %}
+               </div>
+
+               <button type="submit" class="auth-submit">Crear cuenta</button>
+           </form>
+
+           <div class="auth-switch">
+               <span>¿Ya tienes una cuenta? </span><a href="{% url 'login' %}">Inicia sesión aquí</a>
+           </div>
+       </div>
+    </div>
+</section>
+
+<script>
+    (function () {
+       const username = document.getElementById('{{ form.username.id_for_label }}');
+       const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+       const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+       [username, password1, password2].forEach(function (field) {
+           if (field) {
+               field.classList.add('auth-input');
+           }
+       });
+
+       document.querySelectorAll('.password-toggle-btn').forEach(function (button) {
+           button.addEventListener('click', function () {
+               const target = document.getElementById(button.dataset.target);
+               if (!target) {
+                   return;
+               }
+
+               const isPassword = target.type === 'password';
+               target.type = isPassword ? 'text' : 'password';
+               const icon = button.querySelector('i');
+               if (icon) {
+                   icon.classList.toggle('fa-eye', !isPassword);
+                   icon.classList.toggle('fa-eye-slash', isPassword);
+               }
+               button.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+           });
+       });
+    })();
+</script>
+{% endblock %}

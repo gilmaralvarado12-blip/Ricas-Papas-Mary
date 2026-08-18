@@ -1,0 +1,68 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="tarjeta order-ui" data-animate-module>
+    <div class="order-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h2 class="order-title">Editar compra</h2>
+            <a href="{% url 'home' %}" class="btn btn-light btn-sm" aria-label="Volver al inicio"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+        </div>
+
+        {% if items %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 order-table">
+                <thead>
+                    <tr>
+                        <th>Plato</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-end">Editar / quitar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td>
+                            <strong class="cart-item-name">{{ it.producto.nombre }}</strong>
+                            <div class="small cart-item-price">${{ it.producto.precio|floatformat:2 }} c/u</div>
+                        </td>
+                        <td class="text-center">
+                            <form method="post" action="{% url 'pedidos:update_cart_item' it.producto.id %}" class="d-flex align-items-center justify-content-center gap-2">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="decrease" class="btn btn-sm">-</button>
+                                <input type="number" name="quantity" min="1" value="{{ it.qty }}" class="form-control form-control-sm" style="width:70px; text-align:center;">
+                                <button type="submit" name="action" value="increase" class="btn btn-sm">+</button>
+                                <button type="submit" name="action" value="set" class="btn btn-sm"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar</button>
+                            </form>
+                        </td>
+                        <td class="text-end price-strong">${{ it.subtotal|floatformat:2 }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'pedidos:remove_from_cart' it.producto.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-order-danger" title="Quitar este producto del carrito"><i class="fa-solid fa-trash" aria-hidden="true"></i> Quitar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="module-actions-bottom">
+            <a class="btn btn-order-neutral action-left" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+            <div class="action-right">
+                <a class="btn" href="{% url 'ver_menu' %}"><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i> Seguir comprando</a>
+                <a class="btn btn-order-danger" href="{% url 'pedidos:clear_cart' %}" onclick="return confirm('¿Deseas vaciar tu pedido?')"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Vaciar pedido</a>
+                <a class="btn btn-order-primary" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Continuar</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="order-empty">
+            <div class="order-empty-icon"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></div>
+            <h3 class="order-empty-title">No hay platos para editar</h3>
+            <p class="order-empty-text">Agrega platos desde el menú para poder ajustar tu compra.</p>
+            <a class="btn" href="{% url 'ver_menu' %}"><i class="fa-solid fa-utensils" aria-hidden="true"></i> Ir al menú</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

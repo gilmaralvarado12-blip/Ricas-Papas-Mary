@@ -1,0 +1,52 @@
+{% extends 'gestion_web/base.html' %}
+{% block contenido %}
+<div class="tarjeta" data-animate-module>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>Subir comprobante del pedido #{{ pedido.id }}</h2>
+            <p class="order-subtitle">Después de pagar por transferencia, sube el comprobante para que lo revisemos.</p>
+        </div>
+        <a class="btn btn-order-neutral" href="{% url 'pedidos:checkout' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+    </div>
+    <form method="post" enctype="multipart/form-data" id="proof-upload-form" class="transfer-box">
+        {% csrf_token %}
+        <label class="form-label fw-bold" for="id_imagen">Comprobante (imagen o PDF)</label>
+        {{ form.imagen }}
+        {% if form.imagen.errors %}
+        <div class="alert alert-danger mt-2 mb-0">
+            {% for error in form.imagen.errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div id="proof-upload-feedback" class="search-map-feedback" aria-live="polite"></div>
+        <button class="btn mt-3" type="submit"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Enviar comprobante</button>
+    </form>
+</div>
+
+<script>
+    (function () {
+        var uploadForm = document.getElementById('proof-upload-form');
+        var fileInput = document.getElementById('id_imagen');
+        var feedback = document.getElementById('proof-upload-feedback');
+
+        if (!uploadForm || !fileInput || !feedback) {
+            return;
+        }
+
+        uploadForm.addEventListener('submit', function (event) {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                event.preventDefault();
+                feedback.textContent = 'No se subió el comprobante.';
+                feedback.classList.remove('success');
+                feedback.classList.add('error');
+                return;
+            }
+
+            feedback.textContent = 'Comprobante cargado correctamente.';
+            feedback.classList.remove('error');
+            feedback.classList.add('success');
+        });
+    })();
+</script>
+{% endblock %}

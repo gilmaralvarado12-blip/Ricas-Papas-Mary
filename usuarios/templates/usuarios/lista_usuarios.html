@@ -1,0 +1,44 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="tarjeta" data-animate-module>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <h2 style="margin:0;">Gestión de usuarios</h2>
+        <a class="btn" href="{% url 'usuarios:crear_usuario' %}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Nuevo usuario</a>
+    </div>
+
+    <div style="margin-top:14px; overflow-x:auto;">
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom:2px solid #e5e7eb; text-align:left;">
+                    <th style="padding:8px;">Usuario</th>
+                    <th style="padding:8px;">Nombre</th>
+                    <th style="padding:8px;">Correo</th>
+                    <th style="padding:8px;">Rol</th>
+                    <th style="padding:8px;">Activo</th>
+                    <th style="padding:8px; text-align:center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr style="border-bottom:1px solid #edf2f7;">
+                    <td style="padding:8px;">{{ u.username }}</td>
+                    <td style="padding:8px;">{{ u.first_name }} {{ u.last_name }}</td>
+                    <td style="padding:8px;">{{ u.email }}</td>
+                    <td style="padding:8px;">{{ u.get_rol_display }}</td>
+                    <td style="padding:8px;">{% if u.is_active %}Sí{% else %}No{% endif %}</td>
+                    <td style="padding:8px; text-align:center;">
+                        <a class="btn-edit" href="{% url 'usuarios:editar_usuario' u.id %}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Editar</a>
+                        |
+                        <a href="{% url 'usuarios:eliminar_usuario' u.id %}" style="color:#b91c1c;"><i class="fa-solid fa-trash" aria-hidden="true"></i> Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding:14px; text-align:center; color:#777;">No hay usuarios registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<div class="tarjeta module-card" data-animate-module>
+    <div class="module-header">
+        <div class="module-heading">
+            <span class="module-kicker">Reservas</span>
+            <h2 class="module-title">Mis reservas</h2>
+        </div>
+        <a href="{% url 'home' %}" class="btn btn-light btn-sm me-2" aria-label="Volver al inicio"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+        <a class="btn btn-order-neutral module-back-btn" href="{% url 'ver_menu' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+    </div>
+    <!-- Este contenedor permite revisar varias reservas sin que la página se alargue demasiado. -->
+    <div class="module-table-wrapper" style="max-height: 360px;">
+    <table class="module-table">
+        <thead>
+            <tr>
+                <th>Fecha de la reserva</th>
+                <th>Hora</th>
+                <th>Personas</th>
+                <th>Mesa</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reservas %}
+            <tr>
+                <td>{{ r.fecha }}</td>
+                <td>{{ r.hora }}</td>
+                <td>{{ r.numero_personas }}</td>
+                <!-- Mostramos la mesa asignada si existe; si no, dejamos un guion para indicar que aún no se asignó. -->
+                <td>{% if r.mesa %}Mesa #{{ r.mesa.numero }}{% else %}-{% endif %}</td>
+                <td>{{ r.estado_display|default:r.estado }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">
+                    <div class="module-empty-state" style="margin: 0.25rem 0;">Todavía no tienes reservas registradas.</div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

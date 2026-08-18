@@ -1,0 +1,12 @@
+Hola {{ reserva.cliente.username }},
+
+Tu reserva ha sido confirmada.
+
+Detalles de la reserva:
+{% if reserva.mesa %}- Mesa: {{ reserva.mesa.numero }}
+{% else %}- Mesa: Por asignar
+{% endif %}- Fecha: {{ reserva.fecha }}
+- Hora: {{ reserva.hora }}
+- Personas: {{ reserva.numero_personas }}
+
+Gracias por elegir Ricas Papas Mary.

@@ -1,0 +1,50 @@
+{% extends 'gestion_web/base.html' %}
+{% block content %}
+<main class="profile-page">
+  <div class="profile-card" data-animate-module>
+  <div class="profile-header">
+    <div class="profile-avatar" aria-hidden="true">
+      <i class="fa-solid fa-user"></i>
+    </div>
+    <div class="profile-title">
+      <h2>Mi perfil</h2>
+      <div class="profile-sub">Actualiza tus datos personales.</div>
+    </div>
+
+    <div class="profile-actions">
+          <a href="#" class="btn btn-sm rpm btn-volver" onclick="event.preventDefault(); history.back();" title="Volver"><i class="fa-solid fa-arrow-left"></i> Volver</a>
+          <a href="{% url 'home' %}" class="btn btn-sm rpm btn-inicio" title="Inicio"><i class="fa-solid fa-house"></i> Inicio</a>
+    </div>
+  </div>
+
+  <a href="{% url 'usuarios:mi_perfil' %}" class="profile-info-card" title="Información personal">
+    <div>
+      <strong><i class="fa-solid fa-id-card me-2"></i> Información personal</strong>
+      <div style="color:#6c6c6c; font-size:0.95rem;">Editar nombre, correo y otra información personal.</div>
+    </div>
+    <div class="text-muted"><i class="fa-solid fa-chevron-right"></i></div>
+  </a>
+
+  <div class="profile-section">
+    <form method="post" class="profile-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <div class="form-actions">
+              <button class="btn rpm btn-guardar" type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Guardar cambios</button>
+              <a class="btn rpm btn-home-secondary" href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Volver al inicio</a>
+      </div>
+    </form>
+
+    <div class="mt-4 text-center">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger" style="border-radius:8px; padding:8px 14px;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>
+      </form>
+      <div class="logout-note">Al cerrar sesión se cerrará tu acceso a la administración y al sistema.</div>
+    </div>
+  </div>
+</div>
+</main>
+
+{% endblock %}

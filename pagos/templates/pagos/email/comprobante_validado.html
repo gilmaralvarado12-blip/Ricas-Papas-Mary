@@ -1,0 +1,16 @@
+<html>
+
+<body>
+  <h2>Comprobante validado</h2>
+  <p>Hola {{ pedido.cliente.username }},</p>
+  <p>Tu comprobante de pago para el pedido <strong>#{{ pedido.id }}</strong> ha sido <strong>validado
+      correctamente</strong>.</p>
+  <ul>
+    <li>Estado del pedido: {{ pedido_estado_display }}</li>
+    <li>Total: ${{ pedido.total }}</li>
+  </ul>
+  <p>Gracias por tu compra en <strong>Ricas Papas Mary</strong>.</p>
+  <p>¡Buen provecho!</p>
+</body>
+
+</html>

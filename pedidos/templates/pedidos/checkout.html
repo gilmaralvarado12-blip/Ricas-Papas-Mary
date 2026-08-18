@@ -1,0 +1,972 @@
+{% extends 'gestion_web/base.html' %}
+{% load static %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+{% endblock %}
+{% block content %}
+<main class="payment-page">
+    <div class="payment-card tarjeta order-ui" data-animate-module>
+    <div class="order-body">
+        {% if not order_confirmed %}
+        <div class="module-header payment-header">
+            <div class="module-heading">
+                <span class="module-kicker">PAGO</span>
+                <h2 class="order-title module-title">Método de pago</h2>
+                <p class="order-subtitle module-subtitle">Elige la forma de pago que prefieres.</p>
+                <p class="order-time"><i class="fa-solid fa-clock" aria-hidden="true"></i> Pedidos disponibles de 08:00 a 21:00.</p>
+            </div>
+            <a href="{% url 'home' %}" class="payment-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+        </div>
+
+        <div class="checkout-form-grid">
+            <form method="post" class="d-grid gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm_order">
+
+                <div class="payment-methods">
+                    <label class="payment-method-card">
+                        <input type="radio" name="metodo_pago" value="EFECTIVO" {% if selected_metodo_pago == 'EFECTIVO' %}checked{% endif %}>
+                        <div class="method-body">
+                            <div class="method-title"><i class="fa-solid fa-wallet me-2" aria-hidden="true"></i> Pago en efectivo</div>
+                            <div class="method-sub">Paga en efectivo al recibir tu pedido.</div>
+                        </div>
+                    </label>
+
+                    <label class="payment-method-card">
+                        <input type="radio" name="metodo_pago" value="TRANSFERENCIA" {% if selected_metodo_pago == 'TRANSFERENCIA' %}checked{% endif %}>
+                        <div class="method-body">
+                            <div class="method-title"><i class="fa-solid fa-university me-2" aria-hidden="true"></i> Pago por transferencia</div>
+                            <div class="method-sub">Realiza tu pago mediante transferencia bancaria.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <fieldset class="checkout-service-fieldset" style="border:1px solid #e2e8f0; padding: 14px; border-radius: 12px; margin-top: 16px;">
+                    <legend style="font-weight: 700; font-size: 0.95rem;">Tipo de servicio</legend>
+                    <div class="checkout-options-row checkout-options-row--service">
+                        <div class="service-type-card">
+                            <input type="hidden" name="tipo" value="DOMICILIO">
+                            <div class="service-icon"><i class="fa-solid fa-motorcycle" aria-hidden="true"></i></div>
+                            <div>
+                                <div class="service-title">Envío a domicilio</div>
+                                <div class="service-sub">Te llevamos tu pedido hasta la puerta de tu casa.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="domicilio-fields js-module-toggle module-visible" id="domicilio-fields" aria-hidden="false">
+                        <div class="domicilio-layout">
+                            <div class="domicilio-form-col">
+                                <label style="display:block; font-weight:700; margin-top:12px;">Dirección de entrega</label>
+                                <textarea name="direccion" id="direccion" rows="3" class="form-control"
+                                    placeholder="Escribe la dirección del domicilio">{{ direccion|default:'' }}</textarea>
+                                <input type="hidden" name="latitud" id="latitud" value="{{ latitud|default:'' }}">
+                                <input type="hidden" name="longitud" id="longitud" value="{{ longitud|default:'' }}">
+                                <label style="display:block; font-weight:700; margin-top:12px;">Buscar ubicación</label>
+                                <div class="input-group mb-2 map-search-group">
+                                    <input type="text" id="location-search" class="form-control"
+                                        placeholder="Escribe una ciudad, barrio o referencia" autocomplete="off">
+                                    <button type="button" id="search-btn" class="btn"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Buscar</button>
+                                </div>
+                                <div id="search-suggestions" class="search-suggestions" aria-live="polite" hidden></div>
+                                <div id="search-map-feedback" class="search-map-feedback" aria-live="polite"></div>
+                                <p style="font-size:0.85em; color:#475569; margin-top:8px;">Pulsa <strong>Mi ubicación</strong>
+                                    para marcar automáticamente dónde estás. El navegador debe permitir el acceso a tu ubicación;
+                                    si lo solicita, elige <strong>Permitir</strong>.</p>
+                            </div>
+                            <div class="domicilio-map-col">
+                                <button type="button" id="use-my-location-btn" class="map-action-button">
+                                    <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Mi ubicación
+                                </button>
+                                <div id="delivery-map"></div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="payment-actions">
+                    <a class="payment-back-btn" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+                    <div>
+                        <button class="payment-continue-btn" type="submit"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Continuar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% elif order_confirmed %}
+        <div class="module-header">
+            <div class="module-heading">
+                <span class="module-kicker">Confirmación</span>
+                <h2 class="order-title module-title">Pedido confirmado</h2>
+                <p class="order-subtitle module-subtitle">Tu pedido quedó registrado y está listo para continuar con el pago y la entrega.</p>
+            </div>
+        </div>
+
+        <div class="feedback-banner success" style="margin-bottom: 1rem;">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            Tu pedido fue confirmado correctamente. Si elegiste transferencia, realiza el pago y sube tu comprobante para validarlo.
+            {% if delivery_eta_message %}
+            <div style="margin-top:8px; color:#166534; font-weight:700;">{{ delivery_eta_message }}</div>
+            {% endif %}
+        </div>
+
+        {% if delivery_notices %}
+        <div class="feedback-banner error" style="margin-bottom: 0.85rem; background: rgba(255, 183, 3, 0.18); color: #92400e; border-color: rgba(245, 158, 11, 0.35);">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            {% for notice in delivery_notices %}
+            <div>{{ notice }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if selected_metodo_pago == 'TRANSFERENCIA' %}
+        <div class="payment-card transfer-box">
+            <h3 class="order-title">Pago por transferencia</h3>
+            <p class="mb-2 transfer-highlight">Usa estos datos para hacer el pago y sube tu comprobante para validar el pedido.</p>
+            <div class="transfer-payment-layout">
+                <div class="transfer-payment-info">
+                    <div class="payment-detail">
+                        <strong>Banco:</strong> {{ transfer_bank }}
+                    </div>
+                    <div class="payment-detail">
+                        <strong>Titular:</strong> {{ transfer_holder }}
+                    </div>
+                    <div class="payment-detail">
+                        <strong>Número de cuenta:</strong> {{ transfer_account }}
+                    </div>
+                    <p class="mt-3"><strong>Subtotal del pedido:</strong> ${{ confirmed_subtotal|default:confirmed_total|floatformat:2 }}</p>
+                    {% if delivery_extra_fee and delivery_extra_fee > 0 %}
+                    <p class="mb-1" style="color:#92400e;"><strong>Cargo adicional por distancia:</strong> ${{ delivery_extra_fee|floatformat:2 }}</p>
+                    {% endif %}
+                    <p class="mt-2"><strong>Total a pagar:</strong> ${{ confirmed_total|floatformat:2 }}</p>
+                    <p class="mb-0">Escanea el QR o ingresa los datos en tu banca en línea.</p>
+                </div>
+
+                <div class="transfer-payment-proof">
+                    <div>
+                        <img src="{% static 'images/qr.png' %}" alt="QR de transferencia"
+                            style="max-width: 180px; width: 100%; border-radius: 16px;">
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data"
+                        action="{% url 'pagos:subir_comprobante' confirmed_order.id %}" class="mt-4" id="checkout-proof-form">
+                        {% csrf_token %}
+                        <label class="payment-detail" for="id_imagen">
+                            Subir comprobante (imagen o PDF)
+                        </label>
+                        <input type="file" name="imagen" id="id_imagen" accept="image/*,application/pdf" class="form-control"
+                            required>
+                        <div id="checkout-proof-feedback" class="search-map-feedback" aria-live="polite"></div>
+                        <button type="submit" class="btn mt-3"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Enviar comprobante</button>
+                    </form>
+
+                    <p class="mt-3" style="color:#6b2f1c;">Después de subir el comprobante, nuestro equipo revisará el pago y
+                        confirmará tu pedido.</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="payment-card">
+            <h3 class="order-title">Pago en efectivo</h3>
+            <p>Tu compra está registrada. Paga en efectivo cuando recibas tu pedido.</p>
+            <p class="mt-3"><strong>Subtotal del pedido:</strong> ${{ confirmed_subtotal|default:confirmed_total|floatformat:2 }}</p>
+            {% if delivery_extra_fee and delivery_extra_fee > 0 %}
+            <p class="mb-1" style="color:#92400e;"><strong>Cargo adicional por distancia:</strong> ${{ delivery_extra_fee|floatformat:2 }}</p>
+            {% endif %}
+            <p class="mt-2"><strong>Total a pagar:</strong> ${{ confirmed_total|floatformat:2 }}</p>
+            <p class="mb-0">Prepara el monto exacto para una atención más rápida.</p>
+        </div>
+        {% endif %}
+
+        <div class="module-actions-bottom">
+            <a class="btn btn-order-neutral action-left" href="{% url 'pedidos:view_cart' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Regresar</a>
+            <div class="action-right">
+                <a class="btn btn-order-primary" href="{% url 'ver_menu' %}"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Continuar</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+    (function () {
+        var tipoRadios = document.querySelectorAll('input[name="tipo"]');
+        var domicilioFields = document.getElementById('domicilio-fields');
+        var direccionField = document.getElementById('direccion');
+        var latInput = document.getElementById('latitud');
+        var lngInput = document.getElementById('longitud');
+        var mapContainer = document.getElementById('delivery-map');
+        var searchInput = document.getElementById('location-search');
+        var searchBtn = document.getElementById('search-btn');
+        var searchFeedback = document.getElementById('search-map-feedback');
+        var searchSuggestions = document.getElementById('search-suggestions');
+        var myLocationBtn = document.getElementById('use-my-location-btn');
+        var checkoutProofForm = document.getElementById('checkout-proof-form');
+        var checkoutProofInput = document.getElementById('id_imagen');
+        var checkoutProofFeedback = document.getElementById('checkout-proof-feedback');
+        var googleMapsApiKey = '{{ google_maps_api_key|default:""|escapejs }}';
+
+        var map = null;
+        var marker = null;
+        var geocoder = null;
+        var autocompleteService = null;
+        var leafletMap = null;
+        var leafletMarker = null;
+        var leafletReady = false;
+        var suggestionResults = [];
+        var searchDebounce = null;
+        var currentSearchContext = '';
+        var currentSearchBias = null;
+        var manualAddressEdit = false;
+
+        if (!domicilioFields || !direccionField || !latInput || !lngInput || !mapContainer) {
+            return;
+        }
+
+        direccionField.addEventListener('input', function () {
+            manualAddressEdit = true;
+        });
+
+        function setSearchFeedback(text, type) {
+            if (!searchFeedback) {
+                return;
+            }
+            searchFeedback.textContent = text;
+            searchFeedback.classList.remove('success', 'error');
+            if (type) {
+                searchFeedback.classList.add(type);
+            }
+        }
+
+        function hideSuggestions() {
+            if (!searchSuggestions) {
+                return;
+            }
+            searchSuggestions.innerHTML = '';
+            searchSuggestions.hidden = true;
+            suggestionResults = [];
+        }
+
+        function setFallbackMessage(message, type) {
+            if (!mapContainer) {
+                return;
+            }
+            mapContainer.innerHTML = '<p style="color:#64748b; margin:0.75rem;">' + message + '</p>';
+            if (type === 'error') {
+                mapContainer.style.background = '#fff7f7';
+            } else {
+                mapContainer.style.background = '#f8fafc';
+            }
+        }
+
+        function setDeliveryVisible(visible) {
+            if (window.RPMotions && typeof window.RPMotions.toggleModule === 'function') {
+                window.RPMotions.toggleModule(domicilioFields, visible);
+            } else {
+                domicilioFields.classList.toggle('module-visible', visible);
+                domicilioFields.classList.toggle('module-hidden', !visible);
+            }
+
+            direccionField.required = visible;
+            if (!visible) {
+                return;
+            }
+
+            window.setTimeout(function () {
+                if (map && window.google && window.google.maps) {
+                    window.google.maps.event.trigger(map, 'resize');
+                    if (marker) {
+                        map.setCenter(marker.getPosition());
+                    }
+                } else if (leafletMap) {
+                    leafletMap.invalidateSize();
+                    if (leafletMarker) {
+                        leafletMap.setView(leafletMarker.getLatLng(), 15);
+                    }
+                }
+            }, 120);
+        }
+
+        function setLeafletFeedback(text, type) {
+            setSearchFeedback(text, type);
+        }
+
+        function getUserLocation(onSuccess, onFailure) {
+            if (!navigator.geolocation) {
+                onFailure({ code: 0, message: 'Tu navegador no permite geolocalización.' });
+                return;
+            }
+
+            var completed = false;
+            var finishSuccess = function (position) {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                onSuccess(position);
+            };
+            var finishFailure = function (error) {
+                if (completed) {
+                    return;
+                }
+                completed = true;
+                onFailure(error);
+            };
+
+            navigator.geolocation.getCurrentPosition(finishSuccess, function (error) {
+                // Some phones cannot provide GPS immediately; retry with the
+                // network location instead of failing on the first attempt.
+                if (error && error.code === 2) {
+                    navigator.geolocation.getCurrentPosition(finishSuccess, finishFailure, {
+                        enableHighAccuracy: false,
+                        timeout: 20000,
+                        maximumAge: 60000
+                    });
+                    return;
+                }
+                finishFailure(error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 20000,
+                maximumAge: 0
+            });
+        }
+
+        function describeLocationError(error) {
+            if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                return 'Para ubicarte automáticamente, abre el sitio con HTTPS. Los navegadores bloquean la ubicación exacta en conexiones HTTP.';
+            }
+            if (error && error.code === 1) {
+                return 'El navegador bloqueó el permiso. Activa Ubicación para este sitio y pulsa Mi ubicación otra vez.';
+            }
+            if (error && error.code === 2) {
+                return 'No se pudo detectar tu señal GPS o de red. Activa la ubicación del teléfono y vuelve a intentarlo.';
+            }
+            if (error && error.code === 3) {
+                return 'La búsqueda tardó demasiado. Activa GPS/Ubicación y vuelve a pulsar Mi ubicación.';
+            }
+            return 'No se pudo obtener tu ubicación. Activa GPS/Ubicación y vuelve a intentarlo.';
+        }
+
+        function setLeafletMarker(latlng) {
+            if (!leafletMap || !window.L) {
+                return;
+            }
+
+            if (!leafletMarker) {
+                leafletMarker = L.marker(latlng, { draggable: true }).addTo(leafletMap);
+                leafletMarker.on('dragend', function () {
+                    var pos = leafletMarker.getLatLng();
+                    latInput.value = pos.lat.toFixed(6);
+                    lngInput.value = pos.lng.toFixed(6);
+                    reverseGeocodeLeaflet(pos.lat, pos.lng);
+                });
+            } else {
+                leafletMarker.setLatLng(latlng);
+            }
+
+            latInput.value = latlng.lat.toFixed(6);
+            lngInput.value = latlng.lng.toFixed(6);
+            leafletMap.setView(latlng, 15);
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return map[char] || char;
+            });
+        }
+
+        function getSuggestionText(prediction, fallback) {
+            if (!prediction || typeof prediction !== 'object') {
+                return fallback || '';
+            }
+
+            if (typeof prediction.display_name === 'string' && prediction.display_name.trim()) {
+                return prediction.display_name.trim();
+            }
+            if (typeof prediction.formatted_address === 'string' && prediction.formatted_address.trim()) {
+                return prediction.formatted_address.trim();
+            }
+            if (typeof prediction.description === 'string' && prediction.description.trim()) {
+                return prediction.description.trim();
+            }
+            if (prediction.structured_formatting && typeof prediction.structured_formatting.main_text === 'string' && prediction.structured_formatting.main_text.trim()) {
+                return prediction.structured_formatting.main_text.trim();
+            }
+            if (prediction.address) {
+                var road = prediction.address.road || prediction.address.street || prediction.address.pedestrian || prediction.address.path || prediction.address.house_number;
+                if (road) {
+                    return road;
+                }
+            }
+            if (prediction.name) {
+                return prediction.name;
+            }
+
+            return fallback || '';
+        }
+
+        function updateAddressFields(displayValue, forceOverride) {
+            if (!displayValue) {
+                return;
+            }
+
+            if (manualAddressEdit && !forceOverride) {
+                return;
+            }
+
+            if (searchInput) {
+                searchInput.value = displayValue;
+            }
+        }
+
+        function reverseGeocodeLeaflet(lat, lng) {
+            if (manualAddressEdit) {
+                return;
+            }
+
+            fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&accept-language=es&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng), {
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (result) {
+                    if (result && result.display_name) {
+                        updateAddressFields(result.display_name, false);
+                        currentSearchContext = '';
+                    }
+                })
+                .catch(function () {});
+        }
+
+        function initializeLeafletFallback() {
+            if (leafletReady) {
+                if (leafletMap) {
+                    leafletMap.invalidateSize();
+                }
+                return;
+            }
+
+            if (!window.L) {
+                setFallbackMessage('No se pudo cargar el mapa alternativo. Revisa tu conexión e inténtalo de nuevo.', 'error');
+                return;
+            }
+
+            leafletReady = true;
+            mapContainer.innerHTML = '';
+            leafletMap = L.map('delivery-map', {
+                center: [-0.1807, -78.4678],
+                zoom: 14,
+                scrollWheelZoom: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(leafletMap);
+
+            leafletMap.on('click', function (event) {
+                setLeafletMarker(event.latlng);
+                reverseGeocodeLeaflet(event.latlng.lat, event.latlng.lng);
+                setLeafletFeedback('Ubicación exacta marcada en el mapa.', 'success');
+            });
+
+            if (latInput.value && lngInput.value) {
+                var savedLat = parseFloat(latInput.value);
+                var savedLng = parseFloat(lngInput.value);
+                if (Number.isFinite(savedLat) && Number.isFinite(savedLng)) {
+                    setLeafletMarker({ lat: savedLat, lng: savedLng });
+                    reverseGeocodeLeaflet(savedLat, savedLng);
+                    return;
+                }
+            }
+
+            if (navigator.geolocation) {
+                getUserLocation(function (position) {
+                    setLeafletMarker({ lat: position.coords.latitude, lng: position.coords.longitude });
+                    reverseGeocodeLeaflet(position.coords.latitude, position.coords.longitude);
+                }, function () {
+                    leafletMap.setView([-0.1807, -78.4678], 14);
+                });
+            }
+        }
+
+        function updateSearchBias(lat, lng) {
+            currentSearchBias = {
+                lat: lat,
+                lng: lng
+            };
+        }
+
+        function buildSearchContext(addressComponents) {
+            if (!addressComponents || !addressComponents.length) {
+                return '';
+            }
+
+            var wantedTypes = [
+                'neighborhood',
+                'sublocality',
+                'sublocality_level_1',
+                'locality',
+                'administrative_area_level_2',
+                'administrative_area_level_1',
+                'route'
+            ];
+            var values = [];
+
+            addressComponents.forEach(function (component) {
+                if (!component || !component.types) {
+                    return;
+                }
+                component.types.forEach(function (type) {
+                    if (wantedTypes.indexOf(type) !== -1 && component.long_name && values.indexOf(component.long_name) === -1) {
+                        values.push(component.long_name);
+                    }
+                });
+            });
+
+            return values.join(' ').trim();
+        }
+
+        function setMarkerLocation(lat, lng, zoom) {
+            if (!map || !window.google || !window.google.maps) {
+                return;
+            }
+
+            var position = { lat: lat, lng: lng };
+            if (!marker) {
+                marker = new google.maps.Marker({
+                    map: map,
+                    position: position,
+                    draggable: true
+                });
+                marker.addListener('dragend', function () {
+                    var newPosition = marker.getPosition();
+                    if (newPosition) {
+                        placeExactLocation(newPosition.lat(), newPosition.lng());
+                    }
+                });
+            } else {
+                marker.setPosition(position);
+            }
+
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+            map.setCenter(position);
+            if (zoom) {
+                map.setZoom(zoom);
+            }
+        }
+
+        function reverseGeocode(lat, lng, options) {
+            if (!geocoder) {
+                return Promise.resolve(null);
+            }
+
+            return new Promise(function (resolve) {
+                geocoder.geocode({ location: { lat: lat, lng: lng } }, function (results, status) {
+                    if (status !== 'OK' || !results || !results.length) {
+                        resolve(null);
+                        return;
+                    }
+
+                    var result = results[0];
+                    currentSearchContext = buildSearchContext(result.address_components || []);
+                    if (!options || options.updateAddress !== false) {
+                        updateAddressFields(result.formatted_address || 'Ubicación actual');
+                    }
+                    resolve(result);
+                });
+            });
+        }
+
+        function placeExactLocation(lat, lng, skipReverseLookup) {
+            setMarkerLocation(lat, lng, 17);
+            updateSearchBias(lat, lng);
+
+            if (skipReverseLookup) {
+                setSearchFeedback('Ubicación exacta marcada en el mapa.', 'success');
+                return Promise.resolve(null);
+            }
+
+            return reverseGeocode(lat, lng, { updateAddress: true }).then(function () {
+                setSearchFeedback('Ubicación exacta marcada en el mapa.', 'success');
+            });
+        }
+
+        function renderSuggestions(predictions) {
+            if (!searchSuggestions) {
+                return;
+            }
+
+            suggestionResults = predictions || [];
+            searchSuggestions.innerHTML = '';
+
+            if (!suggestionResults.length) {
+                searchSuggestions.hidden = true;
+                return;
+            }
+
+            suggestionResults.forEach(function (prediction) {
+                var title = getSuggestionText(prediction, 'Ubicación');
+                var subtitle = '';
+                if (prediction && prediction.structured_formatting && prediction.structured_formatting.secondary_text) {
+                    subtitle = prediction.structured_formatting.secondary_text;
+                } else if (prediction && prediction.address) {
+                    subtitle = prediction.address.city || prediction.address.town || prediction.address.state || prediction.address.country || prediction.display_name || prediction.name || '';
+                } else if (prediction && prediction.display_name && prediction.display_name !== title) {
+                    subtitle = prediction.display_name;
+                }
+
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'search-suggestion-item';
+                button.innerHTML = '<span class="search-suggestion-title">' + escapeHtml(title || 'Ubicación') + '</span>' +
+                    (subtitle ? '<span class="search-suggestion-subtitle">' + escapeHtml(subtitle) + '</span>' : '');
+                button.addEventListener('click', function () {
+                    selectSuggestion(prediction);
+                });
+                searchSuggestions.appendChild(button);
+            });
+
+            searchSuggestions.hidden = false;
+        }
+
+        function fetchSuggestions(query) {
+            var trimmedQuery = (query || '').trim();
+            if (trimmedQuery.length < 2) {
+                hideSuggestions();
+                if (trimmedQuery.length < 2) {
+                    setSearchFeedback('', '');
+                }
+                return;
+            }
+
+            if (!autocompleteService) {
+                setSearchFeedback('Buscando ubicaciones...', '');
+                fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&countrycodes=ec&accept-language=es&q=' + encodeURIComponent(trimmedQuery + (currentSearchContext ? ' ' + currentSearchContext : '')), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (response) {
+                        return response.ok ? response.json() : [];
+                    })
+                    .then(function (results) {
+                        if (!results || !results.length) {
+                            renderSuggestions([]);
+                            setSearchFeedback('No se encontraron sugerencias. Prueba con otra referencia.', 'error');
+                            return;
+                        }
+
+                        renderSuggestions(results);
+                        setSearchFeedback('Selecciona una ubicación de la lista.', 'success');
+                    })
+                    .catch(function () {
+                        renderSuggestions([]);
+                        setSearchFeedback('No se encontraron sugerencias. Prueba con otra referencia.', 'error');
+                    });
+                return;
+            }
+
+            setSearchFeedback('Buscando ubicaciones...', '');
+
+            var request = {
+                input: trimmedQuery + (currentSearchContext ? ' ' + currentSearchContext : ''),
+                componentRestrictions: { country: 'ec' },
+                types: ['geocode']
+            };
+
+            if (map && typeof map.getBounds === 'function' && map.getBounds()) {
+                request.bounds = map.getBounds();
+            } else if (currentSearchBias) {
+                request.location = new google.maps.LatLng(currentSearchBias.lat, currentSearchBias.lng);
+                request.radius = 25000;
+            }
+
+            autocompleteService.getPlacePredictions(request, function (predictions, status) {
+                if (status !== 'OK' || !predictions || !predictions.length) {
+                    renderSuggestions([]);
+                    setSearchFeedback('No se encontraron sugerencias. Prueba con otra referencia.', 'error');
+                    return;
+                }
+
+                renderSuggestions(predictions);
+                setSearchFeedback('Selecciona una ubicación de la lista.', 'success');
+            });
+        }
+
+        function selectSuggestion(prediction) {
+            if (!prediction) {
+                return;
+            }
+
+            var selectedText = getSuggestionText(prediction, 'Ubicación');
+            manualAddressEdit = false;
+
+            if (!geocoder) {
+                var latitude = parseFloat(prediction.lat);
+                var longitude = parseFloat(prediction.lon);
+                if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                    setSearchFeedback('Ubicación no encontrada.', 'error');
+                    return;
+                }
+
+                setLeafletMarker({ lat: latitude, lng: longitude });
+                updateAddressFields(selectedText, true);
+                reverseGeocodeLeaflet(latitude, longitude);
+                currentSearchContext = '';
+                setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
+                hideSuggestions();
+                return;
+            }
+
+            geocoder.geocode({ placeId: prediction.place_id }, function (results, status) {
+                if (status !== 'OK' || !results || !results.length) {
+                    setSearchFeedback('Ubicación no encontrada.', 'error');
+                    return;
+                }
+
+                var place = results[0];
+                if (!place.geometry || !place.geometry.location) {
+                    setSearchFeedback('Ubicación no encontrada.', 'error');
+                    return;
+                }
+
+                var location = place.geometry.location;
+                placeExactLocation(location.lat(), location.lng(), true);
+
+                if (place.geometry.viewport && map) {
+                    map.fitBounds(place.geometry.viewport);
+                }
+
+                updateAddressFields(place.formatted_address || selectedText, true);
+                currentSearchContext = buildSearchContext(place.address_components || []);
+                setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
+                hideSuggestions();
+            });
+        }
+
+        function geocodeSearch(query) {
+            if (!geocoder) {
+                fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&countrycodes=ec&accept-language=es&q=' + encodeURIComponent(query), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (response) {
+                        return response.ok ? response.json() : [];
+                    })
+                    .then(function (results) {
+                        if (!results || !results.length) {
+                            setSearchFeedback('Ubicación no encontrada.', 'error');
+                            return;
+                        }
+
+                        var result = results[0];
+                        var latitude = parseFloat(result.lat);
+                        var longitude = parseFloat(result.lon);
+                        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                            setSearchFeedback('Ubicación no encontrada.', 'error');
+                            return;
+                        }
+
+                        setLeafletMarker({ lat: latitude, lng: longitude });
+                        updateAddressFields(getSuggestionText(result, query), true);
+                        reverseGeocodeLeaflet(latitude, longitude);
+                        setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
+                        hideSuggestions();
+                    })
+                    .catch(function () {
+                        setSearchFeedback('Ubicación no encontrada.', 'error');
+                    });
+                return;
+            }
+
+            geocoder.geocode({
+                address: query,
+                region: 'ec'
+            }, function (results, status) {
+                if (status !== 'OK' || !results || !results.length) {
+                    setSearchFeedback('Ubicación no encontrada.', 'error');
+                    return;
+                }
+
+                var place = results[0];
+                if (!place.geometry || !place.geometry.location) {
+                    setSearchFeedback('Ubicación no encontrada.', 'error');
+                    return;
+                }
+
+                var location = place.geometry.location;
+                placeExactLocation(location.lat(), location.lng(), true);
+                if (place.geometry.viewport && map) {
+                    map.fitBounds(place.geometry.viewport);
+                }
+                updateAddressFields(place.formatted_address || query, true);
+                currentSearchContext = buildSearchContext(place.address_components || []);
+                setSearchFeedback('Ubicación encontrada y marcada en el mapa.', 'success');
+                hideSuggestions();
+            });
+        }
+
+        function searchLocation() {
+            var query = searchInput ? searchInput.value.trim() : '';
+            if (!query) {
+                setSearchFeedback('Error: ingresa una dirección para buscar en el mapa.', 'error');
+                return;
+            }
+
+            if (suggestionResults.length > 0) {
+                selectSuggestion(suggestionResults[0]);
+                return;
+            }
+
+            geocodeSearch(query + (currentSearchContext ? ' ' + currentSearchContext : ''));
+        }
+
+        function initializeGoogleMap() {
+            if (!googleMapsApiKey) {
+                initializeLeafletFallback();
+                setSearchFeedback('Usando mapa alternativo mientras no se configura Google Maps.', 'success');
+                return;
+            }
+
+            if (!window.google || !window.google.maps) {
+                initializeLeafletFallback();
+                setSearchFeedback('Google Maps no cargó; se usó el mapa alternativo.', 'error');
+                return;
+            }
+
+            geocoder = new google.maps.Geocoder();
+            autocompleteService = new google.maps.places.AutocompleteService();
+
+            map = new google.maps.Map(mapContainer, {
+                center: { lat: -0.1807, lng: -78.4678 },
+                zoom: 14,
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: true,
+                clickableIcons: false
+            });
+
+            map.addListener('click', function (event) {
+                if (event && event.latLng) {
+                    placeExactLocation(event.latLng.lat(), event.latLng.lng());
+                }
+            });
+
+            if (latInput.value && lngInput.value) {
+                var savedLat = parseFloat(latInput.value);
+                var savedLng = parseFloat(lngInput.value);
+                if (Number.isFinite(savedLat) && Number.isFinite(savedLng)) {
+                    placeExactLocation(savedLat, savedLng);
+                    map.setZoom(16);
+                    return;
+                }
+            }
+
+            if (navigator.geolocation) {
+                getUserLocation(function (position) {
+                    placeExactLocation(position.coords.latitude, position.coords.longitude);
+                    map.setZoom(16);
+                }, function (error) {
+                    setSearchFeedback('Puedes usar el buscador o mover el marcador manualmente.', '');
+                });
+            }
+        }
+
+        window.initCheckoutGoogleMaps = function () {
+            initializeGoogleMap();
+        };
+
+        searchBtn.addEventListener('click', searchLocation);
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchLocation();
+                }
+            });
+            searchInput.addEventListener('input', function () {
+                window.clearTimeout(searchDebounce);
+                var currentValue = this.value;
+                searchDebounce = window.setTimeout(function () {
+                    fetchSuggestions(currentValue);
+                }, 250);
+            });
+            searchInput.addEventListener('blur', function () {
+                window.setTimeout(function () {
+                    hideSuggestions();
+                }, 180);
+            });
+        }
+
+        if (myLocationBtn) {
+            myLocationBtn.addEventListener('click', function () {
+                setSearchFeedback('Buscando tu ubicación exacta...', '');
+                getUserLocation(function (position) {
+                    if (geocoder) {
+                        placeExactLocation(position.coords.latitude, position.coords.longitude);
+                        if (map) {
+                            map.setZoom(17);
+                        }
+                    } else {
+                        setLeafletMarker({ lat: position.coords.latitude, lng: position.coords.longitude });
+                        reverseGeocodeLeaflet(position.coords.latitude, position.coords.longitude);
+                        if (leafletMap) {
+                            leafletMap.setZoom(17);
+                        }
+                        setSearchFeedback('Ubicación exacta marcada en el mapa.', 'success');
+                    }
+                }, function (error) {
+                    setSearchFeedback(describeLocationError(error), 'error');
+                });
+            });
+        }
+
+        tipoRadios.forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                var visible = this.value === 'DOMICILIO';
+                setDeliveryVisible(visible);
+            });
+        });
+
+        if (document.querySelector('input[name="tipo"][value="DOMICILIO"]:checked')) {
+            setDeliveryVisible(true);
+        }
+
+        if (checkoutProofForm && checkoutProofInput && checkoutProofFeedback) {
+            checkoutProofForm.addEventListener('submit', function (event) {
+                if (!checkoutProofInput.files || checkoutProofInput.files.length === 0) {
+                    event.preventDefault();
+                    checkoutProofFeedback.textContent = 'Error: comprobante faltante.';
+                    checkoutProofFeedback.classList.remove('success');
+                    checkoutProofFeedback.classList.add('error');
+                    return;
+                }
+                checkoutProofFeedback.textContent = 'Comprobante cargado correctamente.';
+                checkoutProofFeedback.classList.remove('error');
+                checkoutProofFeedback.classList.add('success');
+            });
+        }
+
+        if (googleMapsApiKey) {
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(googleMapsApiKey) + '&libraries=places&callback=initCheckoutGoogleMaps';
+            script.async = true;
+            script.defer = true;
+            script.onerror = function () {
+                initializeLeafletFallback();
+                setSearchFeedback('No se pudo cargar Google Maps. Se activó el mapa alternativo.', 'error');
+            };
+            document.head.appendChild(script);
+        } else {
+            initializeGoogleMap();
+        }
+    })();
+</script>
+</main>
+{% endblock %}

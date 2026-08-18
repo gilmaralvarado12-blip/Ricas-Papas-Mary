@@ -1,0 +1,51 @@
+RICAS PAPAS MARY - CONFIGURACION SEGURA
+=======================================
+
+Cambios aplicados:
+- Se retiraron credenciales de Cloudinary del codigo fuente.
+- Se elimino la creacion/restablecimiento automatico del superusuario al ejecutar migrate.
+- DJANGO_SECRET_KEY ahora debe configurarse por variable de entorno en produccion.
+- Cloudinary se activa solo si existen sus variables de entorno.
+- Los archivos estaticos se mantienen con WhiteNoise.
+- requirements.txt fue normalizado a UTF-8 para evitar problemas al instalar dependencias.
+
+IMPORTANTE - CLOUDINARY
+-----------------------
+Las credenciales anteriores estuvieron escritas dentro del proyecto y del historial Git original.
+Por seguridad, genera/rota el API Secret en tu cuenta de Cloudinary y configura las credenciales nuevas
+como variables de entorno. No vuelvas a escribirlas en settings.py.
+
+Puedes usar una de estas opciones:
+
+Opcion A:
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+
+Opcion B:
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+
+PRODUCCION
+----------
+Configura obligatoriamente:
+DEBUG=False
+DJANGO_SECRET_KEY=<una clave secreta nueva y larga>
+ALLOWED_HOSTS=<tu dominio>
+
+Si usas Render, coloca estas variables en Environment del servicio.
+
+SUPERUSUARIO
+------------
+El sistema ya no crea ni cambia automaticamente la clave del administrador.
+Para crear un superusuario nuevo usa:
+
+python manage.py createsuperuser
+
+DESARROLLO LOCAL
+----------------
+Con DEBUG=True el proyecto puede iniciar sin DJANGO_SECRET_KEY usando una clave exclusiva de desarrollo.
+Los archivos multimedia se guardan localmente si Cloudinary no esta configurado.
+
+ARCHIVO .env.example
+--------------------
+Se incluye como guia. No contiene secretos reales.

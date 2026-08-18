@@ -1,0 +1,10 @@
+Hola {{ pedido.cliente.username }},
+
+Tu comprobante de pago para el pedido #{{ pedido.id }} ha sido validado correctamente.
+
+Estado del pedido: {{ pedido_estado_display }}
+Total: ${{ pedido.total }}
+
+Gracias por tu compra en Ricas Papas Mary.
+
+¡Buen provecho!
